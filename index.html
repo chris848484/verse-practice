@@ -90,6 +90,11 @@
     font-family:'Noto Serif KR',serif;font-weight:600;
     font-size:30px;letter-spacing:-.01em;line-height:1.3;margin:0 0 4px;
   }
+  .body-q{
+    font-family:'Noto Serif KR',serif;font-size:19px;line-height:1.9;
+    color:var(--ink);word-break:keep-all;
+    border-left:3px solid var(--accent);padding-left:16px;margin:0 0 4px;display:none;
+  }
   .hint{font-size:12.5px;color:var(--ink-soft);margin-bottom:18px;}
 
   textarea{
@@ -101,6 +106,19 @@
   }
   textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
   textarea::placeholder{color:#b6bcbb;}
+
+  .choices{display:none;grid-template-columns:1fr 1fr;gap:10px;margin-top:2px;}
+  .choice{
+    font-family:'Noto Serif KR',serif;font-size:16px;font-weight:600;
+    text-align:left;padding:14px 16px;border-radius:11px;
+    border:1px solid var(--line);background:#fdfdfc;color:var(--ink);
+    cursor:pointer;transition:.15s;
+  }
+  .choice:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft);}
+  .choice:disabled{cursor:default;}
+  .choice.correct{border-color:var(--ok);background:#e7f3ec;color:var(--ok);}
+  .choice.wrong{border-color:var(--miss);background:var(--miss-bg);color:var(--miss);}
+  @media(max-width:480px){.choices{grid-template-columns:1fr;}}
 
   .actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
   .btn{
@@ -201,6 +219,11 @@
     <div class="card">
       <div class="pbar">
         <div class="selectrow">
+          <label class="lbl" for="typeSel">유형</label>
+          <select id="typeSel">
+            <option value="toText">주소 → 말씀</option>
+            <option value="toRef">말씀 → 주소</option>
+          </select>
           <label class="lbl" for="catSel">범위</label>
           <select id="catSel"></select>
           <select id="orderSel">
@@ -214,23 +237,26 @@
       <div id="promptArea">
         <span class="cat" id="pCat"></span>
         <p class="ref" id="pRef"></p>
-        <p class="hint">위 주소의 말씀을 아래에 타이핑하세요. 띄어쓰기는 채점하지 않습니다.</p>
+        <p class="body-q" id="pBody"></p>
+        <p class="hint" id="pHint">위 주소의 말씀을 아래에 타이핑하세요. 띄어쓰기는 채점하지 않습니다.</p>
         <textarea id="answer" placeholder="여기에 말씀을 입력하고 Ctrl+Enter 또는 채점하기를 누르세요…" spellcheck="false"></textarea>
+        <div class="choices" id="choices"></div>
         <div class="actions">
           <button class="btn primary" id="gradeBtn">채점하기</button>
           <button class="btn subtle" id="retryBtn">재시험</button>
           <button class="btn subtle" id="revealBtn">정답 보기</button>
+          <button class="btn subtle" id="prevBtn">← 이전 구절</button>
           <button class="btn subtle" id="nextBtn">다음 구절 →</button>
         </div>
 
         <div class="result" id="result">
-          <div class="score">
+          <div class="score" id="score">
             <span class="pct" id="pct"></span>
             <span class="word">정확도</span>
           </div>
           <p class="meta" id="meta"></p>
           <div class="graded" id="graded"></div>
-          <div class="legend">
+          <div class="legend" id="legend">
             <span><i class="dot ok"></i>맞음</span>
             <span><i class="dot miss"></i>빠뜨리거나 다른 글자</span>
             <span><i class="dot extra"></i>잘못 더 친 글자</span>
@@ -373,30 +399,114 @@ function buildPool(){
 
 function currentVerse(){ return pool[order[cursor]]; }
 
+function currentMode(){ return document.getElementById('typeSel').value; }
+
+// ---------- 객관식 오답 생성 ----------
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function bookOf(ref){ return ref.split(' ')[0]; }
+function makeFakeRef(ref, taken){
+  const sp=ref.indexOf(' '); if(sp<0) return null;
+  const book=ref.slice(0,sp), rest=ref.slice(sp+1);
+  const m=rest.match(/^(\d+):(\d+)/); if(!m) return null;
+  for(let t=0;t<25;t++){
+    let ch=+m[1], vs=+m[2];
+    if(Math.random()<0.5) ch=Math.max(1, ch+(Math.random()<0.5?-1:1)*(1+Math.floor(Math.random()*2)));
+    vs=Math.max(1, vs+(Math.random()<0.5?-1:1)*(1+Math.floor(Math.random()*6)));
+    const cand=`${book} ${ch}:${vs}`;
+    if(!taken.includes(cand)) return cand;
+  }
+  return null;
+}
+function buildChoices(v){
+  const all=allVerses();
+  const correct=v.ref, book=bookOf(correct);
+  const distract=[];
+  const same=shuffle(all.map(x=>x.ref).filter(r=>r!==correct && bookOf(r)===book));
+  for(const r of same){ if(distract.length<2 && !distract.includes(r)) distract.push(r); }  // 같은 책 최대 2
+  const other=shuffle(all.map(x=>x.ref).filter(r=>r!==correct && !distract.includes(r) && bookOf(r)!==book));
+  for(const r of other){ if(distract.length<3 && !distract.includes(r)) distract.push(r); }
+  while(distract.length<3){ const f=makeFakeRef(correct, distract.concat([correct])); if(f) distract.push(f); else break; }
+  return shuffle([correct, ...distract.slice(0,3)]);
+}
+function pickChoice(btn, chosen, correct, cdiv){
+  [...cdiv.children].forEach(c=>{ c.disabled=true; if(c.textContent===correct) c.classList.add('correct'); });
+  const ok = chosen===correct;
+  if(!ok) btn.classList.add('wrong');
+  document.getElementById('score').style.display='none';
+  document.getElementById('graded').style.display='none';
+  document.getElementById('legend').style.display='none';
+  document.getElementById('perfect').style.display='none';
+  const meta=document.getElementById('meta');
+  meta.innerHTML = ok ? '정답입니다. ✓' : `아쉽네요. 정답은 <b>${correct}</b> 입니다.`;
+  meta.style.color = ok ? 'var(--ok)' : 'var(--miss)';
+  document.getElementById('result').classList.add('show');
+}
+
 function renderPrompt(){
   const v = currentVerse();
+  const mode = currentMode();
+  const refEl = document.getElementById('pRef');
+  const bodyEl = document.getElementById('pBody');
+  const ans = document.getElementById('answer');
+  const choices = document.getElementById('choices');
+  const gradeBtn = document.getElementById('gradeBtn');
+  const revealBtn = document.getElementById('revealBtn');
+
   if(!v){
     document.getElementById('pCat').textContent='';
-    document.getElementById('pRef').textContent='말씀이 없습니다';
+    refEl.textContent='말씀이 없습니다'; refEl.style.display='block';
+    bodyEl.style.display='none';
     document.getElementById('counter').textContent='';
     return;
   }
   document.getElementById('pCat').textContent = v.cat;
-  document.getElementById('pRef').textContent = v.ref;
   document.getElementById('counter').textContent = `${cursor+1} / ${pool.length}`;
-  document.getElementById('answer').value='';
   document.getElementById('result').classList.remove('show');
   document.getElementById('perfect').style.display='none';
   resetReveal();
-  document.getElementById('answer').focus();
+
+  if(mode==='toRef'){
+    bodyEl.textContent = v.text; bodyEl.style.display='block';
+    refEl.style.display='none';
+    document.getElementById('pHint').textContent='이 말씀이 어디 말씀인지 아래에서 골라보세요.';
+    ans.style.display='none';
+    gradeBtn.style.display='none';
+    revealBtn.style.display='none';
+    choices.style.display='grid';
+    choices.innerHTML='';
+    buildChoices(v).forEach(opt=>{
+      const b=document.createElement('button');
+      b.className='choice'; b.type='button'; b.textContent=opt;
+      b.onclick=()=>pickChoice(b, opt, v.ref, choices);
+      choices.appendChild(b);
+    });
+  }else{
+    refEl.textContent = v.ref; refEl.style.display='block';
+    bodyEl.style.display='none';
+    document.getElementById('pHint').textContent='위 주소의 말씀을 아래에 타이핑하세요. 띄어쓰기는 채점하지 않습니다.';
+    ans.style.display='block';
+    ans.style.minHeight='140px';
+    ans.value='';
+    gradeBtn.style.display='';
+    revealBtn.style.display='';
+    choices.style.display='none';
+    choices.innerHTML='';
+    ans.focus();
+  }
 }
 
 function doGrade(){
+  if(currentMode()==='toRef') return;   // 객관식은 선택지 클릭으로 채점
   const v = currentVerse(); if(!v) return;
   const input = document.getElementById('answer').value;
   if(!input.trim()){ document.getElementById('answer').focus(); return; }
-  const g = grade(v.text, input);
+  const target = v.text;
+  const g = grade(target, input);
   resetReveal();
+  document.getElementById('score').style.display='';
+  document.getElementById('graded').style.display='';
+  document.getElementById('legend').style.display='';
+  document.getElementById('meta').style.color='';
   document.getElementById('pct').textContent = g.pct + '%';
   let meta = `맞은 글자 ${g.correct}자`;
   if(g.missed) meta += ` · <b class="m">빠뜨림 ${g.missed}자</b>`;
@@ -419,6 +529,10 @@ function doReveal(){
     resetReveal();
     return;
   }
+  document.getElementById('score').style.display='';
+  document.getElementById('graded').style.display='';
+  document.getElementById('legend').style.display='';
+  document.getElementById('meta').style.color='';
   document.getElementById('pct').textContent = '—';
   document.getElementById('meta').innerHTML = '정답 본문입니다. 눈으로 익힌 뒤 다시 도전해 보세요.';
   document.getElementById('graded').innerHTML = `<span class="ok">${v.text.split('').map(esc).join('')}</span>`;
@@ -431,6 +545,12 @@ function doReveal(){
 function doNext(){
   if(pool.length===0) return;
   cursor = (cursor+1) % pool.length;
+  renderPrompt();
+}
+
+function doPrev(){
+  if(pool.length===0) return;
+  cursor = (cursor-1+pool.length) % pool.length;
   renderPrompt();
 }
 
@@ -488,12 +608,14 @@ document.querySelectorAll('.tab').forEach(t=>{
 document.getElementById('gradeBtn').onclick = doGrade;
 document.getElementById('retryBtn').onclick = ()=>renderPrompt();  // 같은 구절 다시
 document.getElementById('revealBtn').onclick = doReveal;
+document.getElementById('prevBtn').onclick = doPrev;
 document.getElementById('nextBtn').onclick = doNext;
 document.getElementById('answer').addEventListener('keydown', e=>{
   if((e.ctrlKey||e.metaKey) && e.key==='Enter'){ e.preventDefault(); doGrade(); }
 });
 document.getElementById('catSel').onchange = ()=>{ buildPool(); renderPrompt(); };
 document.getElementById('orderSel').onchange = ()=>{ buildPool(); renderPrompt(); };
+document.getElementById('typeSel').onchange = ()=>{ renderPrompt(); };
 
 document.getElementById('saveBtn').onclick = async ()=>{
   const cat = document.getElementById('aCat').value.trim();
