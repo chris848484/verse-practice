@@ -196,6 +196,29 @@
   .del:hover{background:var(--miss-bg);}
   .empty{color:var(--ink-soft);font-size:13.5px;padding:8px 0;}
 
+  /* exam */
+  .exam-item{padding:18px 0;border-bottom:1px solid var(--line);}
+  .exam-item:first-child{padding-top:2px;}
+  .exam-item:last-child{border-bottom:0;}
+  .exam-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .exam-num{font-size:12px;font-weight:700;color:#fff;background:var(--accent);
+    width:23px;height:23px;border-radius:50%;display:inline-flex;align-items:center;
+    justify-content:center;flex:0 0 auto;}
+  .exam-ref{font-family:'Noto Serif KR',serif;font-weight:600;font-size:19px;}
+  .exam-input{width:100%;min-height:78px;resize:vertical;
+    font-family:'Noto Serif KR',serif;font-size:16px;line-height:1.8;color:var(--ink);
+    background:#fdfdfc;border:1px solid var(--line);border-radius:10px;padding:12px 14px;}
+  .exam-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  .exam-grade{display:none;margin-top:10px;}
+  .exam-grade.show{display:block;animation:fade .25s ease;}
+  .eg-meta{font-size:12.5px;color:var(--ink-soft);margin-bottom:7px;}
+  .eg-meta b.m{color:var(--miss);} .eg-meta b.e{color:var(--extra);}
+  .eg-empty{font-size:12.5px;color:var(--miss);}
+  .exam-total{display:flex;align-items:baseline;gap:12px;margin-top:22px;
+    padding:18px 20px;background:var(--accent-soft);border-radius:13px;flex-wrap:wrap;}
+  .exam-total .pct{font-family:'Noto Serif KR',serif;font-size:34px;font-weight:700;color:var(--accent);}
+  .exam-total .word{font-size:13.5px;color:var(--ink-soft);}
+
   footer{text-align:center;font-size:11.5px;color:#a7adab;margin-top:28px;}
   footer span{font-family:'Noto Serif KR',serif;}
 </style>
@@ -209,6 +232,7 @@
     </div>
     <div class="tabs">
       <button class="tab active" data-tab="practice">연습</button>
+      <button class="tab" data-tab="exam">모의시험</button>
       <button class="tab" data-tab="add">말씀 추가</button>
       <button class="tab" data-tab="list">목록</button>
     </div>
@@ -290,6 +314,29 @@
         <button class="btn primary" id="saveBtn">말씀 저장</button>
         <span class="toast" id="toast">저장했습니다 ✓</span>
       </div>
+    </div>
+  </section>
+
+  <!-- EXAM -->
+  <section class="panel" id="exam">
+    <div class="card">
+      <div class="pbar">
+        <div class="selectrow">
+          <label class="lbl" for="examCat">범위</label>
+          <select id="examCat"></select>
+          <select id="examOrder">
+            <option value="seq">순서대로</option>
+            <option value="random">무작위</option>
+          </select>
+        </div>
+        <button class="btn subtle" id="examReset">새로 시작</button>
+      </div>
+      <p class="hint" style="margin-bottom:18px;">아래 주소마다 말씀을 입력한 뒤 맨 아래 전체 채점을 누르세요. 띄어쓰기는 채점하지 않습니다.</p>
+      <div id="examList"></div>
+      <div class="actions">
+        <button class="btn primary" id="examSubmit">전체 채점</button>
+      </div>
+      <div id="examResult"></div>
     </div>
   </section>
 
@@ -556,14 +603,59 @@ function doPrev(){
 
 // ---------- 범위 선택 옵션 ----------
 function rebuildCatSelect(){
-  const sel = document.getElementById('catSel');
-  const prev = sel.value;
   const cats = [...new Set(allVerses().map(v=>v.cat))];
-  sel.innerHTML = `<option value="__all__">전체</option>` +
+  const optHtml = `<option value="__all__">전체</option>` +
     cats.map(c=>`<option value="${c.replace(/"/g,'&quot;')}">${c}</option>`).join('');
-  if(prev && [...sel.options].some(o=>o.value===prev)) sel.value=prev;
-  // datalist for add form
+  ['catSel','examCat'].forEach(id=>{
+    const sel=document.getElementById(id); if(!sel) return;
+    const prev=sel.value; sel.innerHTML=optHtml;
+    if(prev && [...sel.options].some(o=>o.value===prev)) sel.value=prev;
+  });
   document.getElementById('catList').innerHTML = cats.map(c=>`<option value="${c.replace(/"/g,'&quot;')}">`).join('');
+}
+
+// ---------- 모의시험 ----------
+let examVerses=[];
+function buildExam(){
+  const all=allVerses();
+  const cat=document.getElementById('examCat').value;
+  let list = cat==='__all__' ? all.slice() : all.filter(v=>v.cat===cat);
+  if(document.getElementById('examOrder').value==='random') shuffle(list);
+  examVerses=list;
+  document.getElementById('examList').innerHTML = list.map((v,i)=>`
+    <div class="exam-item">
+      <div class="exam-head"><span class="exam-num">${i+1}</span><span class="exam-ref">${v.ref}</span></div>
+      <textarea class="exam-input" data-i="${i}" spellcheck="false" placeholder="이 주소의 말씀을 입력하세요…"></textarea>
+      <div class="exam-grade" id="eg-${i}"></div>
+    </div>`).join('');
+  document.getElementById('examResult').innerHTML='';
+}
+function gradeExam(){
+  if(!examVerses.length) return;
+  let sumPct=0, perfect=0;
+  examVerses.forEach((v,i)=>{
+    const ta=document.querySelector(`.exam-input[data-i="${i}"]`);
+    const eg=document.getElementById('eg-'+i);
+    const input=ta.value;
+    if(!input.trim()){
+      eg.innerHTML=`<div class="eg-empty">미입력 (0%)</div>`;
+      eg.className='exam-grade show';
+      return;
+    }
+    const g=grade(v.text, input);
+    sumPct+=g.pct;
+    if(g.perfect) perfect++;
+    let meta=`정확도 ${g.pct}%`;
+    if(g.missed) meta+=` · <b class="m">빠뜨림 ${g.missed}</b>`;
+    if(g.extra)  meta+=` · <b class="e">잘못 친 글자 ${g.extra}</b>`;
+    eg.innerHTML=`<div class="eg-meta">${meta}</div><div class="graded">${g.html}</div>`;
+    eg.className='exam-grade show';
+  });
+  const avg=Math.round(sumPct/examVerses.length);
+  document.getElementById('examResult').innerHTML=
+    `<div class="exam-total"><span class="pct">${avg}%</span>`+
+    `<span class="word">평균 정확도 · ${examVerses.length}구절 중 ${perfect}구절 완벽</span></div>`;
+  document.getElementById('examResult').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
 // ---------- 목록 렌더 ----------
@@ -601,6 +693,7 @@ document.querySelectorAll('.tab').forEach(t=>{
     t.classList.add('active');
     document.getElementById(t.dataset.tab).classList.add('active');
     if(t.dataset.tab==='list') renderList();
+    if(t.dataset.tab==='exam' && !document.getElementById('examList').children.length) buildExam();
   };
 });
 
@@ -616,6 +709,10 @@ document.getElementById('answer').addEventListener('keydown', e=>{
 document.getElementById('catSel').onchange = ()=>{ buildPool(); renderPrompt(); };
 document.getElementById('orderSel').onchange = ()=>{ buildPool(); renderPrompt(); };
 document.getElementById('typeSel').onchange = ()=>{ renderPrompt(); };
+document.getElementById('examCat').onchange = buildExam;
+document.getElementById('examOrder').onchange = buildExam;
+document.getElementById('examReset').onclick = buildExam;
+document.getElementById('examSubmit').onclick = gradeExam;
 
 document.getElementById('saveBtn').onclick = async ()=>{
   const cat = document.getElementById('aCat').value.trim();
