@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>말씀 암송 연습</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f3f4f1;
+    --card:#ffffff;
+    --ink:#23282b;
+    --ink-soft:#5b6469;
+    --line:#e3e5e0;
+    --accent:#2f6f6a;
+    --accent-soft:#e7f0ee;
+    --ok:#2a7a4f;
+    --miss:#c0392b;
+    --miss-bg:#fbe6e3;
+    --extra:#b8852a;
+    --extra-bg:#f6edd9;
+    --shadow:0 1px 2px rgba(35,40,43,.04),0 8px 28px rgba(35,40,43,.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Noto Sans KR',system-ui,sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+    padding:28px 18px 80px;
+  }
+  .wrap{max-width:680px;margin:0 auto;}
+
+  header.top{
+    display:flex;align-items:baseline;justify-content:space-between;
+    gap:16px;margin-bottom:22px;flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:baseline;gap:12px;}
+  .brand h1{
+    font-family:'Noto Serif KR',serif;
+    font-weight:600;font-size:21px;letter-spacing:-.01em;margin:0;
+  }
+  .brand .sub{font-size:12.5px;color:var(--ink-soft);}
+
+  /* tabs */
+  .tabs{display:flex;gap:4px;background:var(--card);border:1px solid var(--line);
+    border-radius:11px;padding:4px;box-shadow:var(--shadow);}
+  .tab{
+    appearance:none;border:0;background:transparent;cursor:pointer;
+    font-family:inherit;font-size:13.5px;font-weight:500;color:var(--ink-soft);
+    padding:7px 14px;border-radius:8px;transition:.15s;
+  }
+  .tab:hover{color:var(--ink);}
+  .tab.active{background:var(--accent);color:#fff;}
+
+  .panel{display:none;animation:fade .25s ease;}
+  .panel.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    box-shadow:var(--shadow);padding:26px 24px;margin-top:18px;
+  }
+
+  /* practice header row */
+  .pbar{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    margin-bottom:18px;flex-wrap:wrap;}
+  .selectrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  label.lbl{font-size:12px;color:var(--ink-soft);font-weight:500;}
+  select,.ghost{
+    font-family:inherit;font-size:13.5px;color:var(--ink);
+    background:var(--paper);border:1px solid var(--line);border-radius:9px;
+    padding:7px 11px;cursor:pointer;transition:.15s;
+  }
+  select:focus,.ghost:focus{outline:2px solid var(--accent-soft);outline-offset:1px;}
+  .ghost:hover{border-color:var(--accent);color:var(--accent);}
+  .counter{font-size:12.5px;color:var(--ink-soft);}
+
+  /* the prompt: reference shown big */
+  .cat{
+    display:inline-block;font-size:12px;letter-spacing:.04em;
+    color:var(--accent);background:var(--accent-soft);
+    padding:3px 10px;border-radius:999px;font-weight:600;margin-bottom:14px;
+  }
+  .ref{
+    font-family:'Noto Serif KR',serif;font-weight:600;
+    font-size:30px;letter-spacing:-.01em;line-height:1.3;margin:0 0 4px;
+  }
+  .hint{font-size:12.5px;color:var(--ink-soft);margin-bottom:18px;}
+
+  textarea{
+    width:100%;min-height:140px;resize:vertical;
+    font-family:'Noto Serif KR',serif;font-size:18px;line-height:1.9;
+    color:var(--ink);background:#fdfdfc;
+    border:1px solid var(--line);border-radius:12px;padding:16px 17px;
+    transition:.15s;
+  }
+  textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  textarea::placeholder{color:#b6bcbb;}
+
+  .actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+  .btn{
+    appearance:none;border:0;cursor:pointer;font-family:inherit;
+    font-size:14.5px;font-weight:600;padding:11px 20px;border-radius:10px;transition:.15s;
+  }
+  .btn.primary{background:var(--accent);color:#fff;}
+  .btn.primary:hover{background:#27605c;}
+  .btn.subtle{background:var(--paper);color:var(--ink-soft);border:1px solid var(--line);}
+  .btn.subtle:hover{color:var(--ink);border-color:#cfd3cd;}
+
+  /* result */
+  .result{margin-top:22px;padding-top:22px;border-top:1px solid var(--line);display:none;}
+  .result.show{display:block;animation:fade .3s ease;}
+  .score{display:flex;align-items:baseline;gap:10px;margin-bottom:4px;}
+  .score .pct{font-family:'Noto Serif KR',serif;font-size:34px;font-weight:700;}
+  .score .word{font-size:14px;color:var(--ink-soft);}
+  .meta{font-size:12.5px;color:var(--ink-soft);margin-bottom:16px;}
+  .meta b.m{color:var(--miss);}
+  .meta b.e{color:var(--extra);}
+
+  .graded{
+    font-family:'Noto Serif KR',serif;font-size:19px;line-height:2;
+    background:#fcfcfb;border:1px solid var(--line);border-radius:12px;
+    padding:16px 18px;white-space:pre-wrap;word-break:keep-all;
+  }
+  .graded .ok{color:var(--ink);}
+  .graded .miss{color:var(--miss);background:var(--miss-bg);border-radius:4px;
+    padding:0 1px;text-decoration:underline wavy var(--miss);text-underline-offset:3px;}
+  .graded .extra{color:var(--extra);background:var(--extra-bg);border-radius:4px;
+    padding:0 1px;text-decoration:line-through;}
+
+  .legend{display:flex;gap:16px;margin-top:12px;font-size:11.5px;color:var(--ink-soft);flex-wrap:wrap;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .dot{width:9px;height:9px;border-radius:3px;display:inline-block;}
+  .dot.miss{background:var(--miss);}
+  .dot.extra{background:var(--extra);}
+  .dot.ok{background:var(--accent);}
+
+  .perfect{
+    margin-top:16px;background:var(--accent-soft);color:var(--accent);
+    border-radius:10px;padding:12px 14px;font-size:13.5px;font-weight:500;
+    display:none;
+  }
+
+  /* add form */
+  .field{margin-bottom:15px;}
+  .field label{display:block;font-size:12.5px;font-weight:500;color:var(--ink-soft);margin-bottom:6px;}
+  .field input,.field textarea.mini{
+    width:100%;font-family:inherit;font-size:14.5px;color:var(--ink);
+    background:#fdfdfc;border:1px solid var(--line);border-radius:10px;padding:11px 13px;
+  }
+  .field textarea.mini{font-family:'Noto Serif KR',serif;min-height:96px;resize:vertical;line-height:1.8;}
+  .field input:focus,.field textarea.mini:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  .row2{display:flex;gap:12px;}
+  .row2 .field{flex:1;}
+  .formnote{font-size:12px;color:var(--ink-soft);margin-top:-4px;margin-bottom:14px;}
+  .toast{font-size:13px;color:var(--ok);font-weight:500;margin-left:12px;opacity:0;transition:.2s;}
+  .toast.show{opacity:1;}
+
+  /* list */
+  .listcat{font-family:'Noto Serif KR',serif;font-weight:600;font-size:15px;
+    margin:20px 0 8px;color:var(--accent);}
+  .listcat:first-child{margin-top:4px;}
+  .vrow{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+    padding:11px 0;border-bottom:1px solid var(--line);}
+  .vrow:last-child{border-bottom:0;}
+  .vref{font-weight:600;font-size:14px;min-width:120px;}
+  .vtext{font-size:13px;color:var(--ink-soft);flex:1;word-break:keep-all;
+    font-family:'Noto Serif KR',serif;line-height:1.7;}
+  .vtag{font-size:10.5px;color:var(--extra);background:var(--extra-bg);
+    padding:1px 7px;border-radius:999px;font-weight:600;align-self:center;}
+  .del{appearance:none;border:0;background:transparent;color:#c0392b;cursor:pointer;
+    font-size:12px;font-family:inherit;padding:2px 6px;border-radius:6px;align-self:center;}
+  .del:hover{background:var(--miss-bg);}
+  .empty{color:var(--ink-soft);font-size:13.5px;padding:8px 0;}
+
+  footer{text-align:center;font-size:11.5px;color:#a7adab;margin-top:28px;}
+  footer span{font-family:'Noto Serif KR',serif;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>말씀 암송 연습</h1>
+      <span class="sub">주소를 보고, 손으로 새겨 외우기</span>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="practice">연습</button>
+      <button class="tab" data-tab="add">말씀 추가</button>
+      <button class="tab" data-tab="list">목록</button>
+    </div>
+  </header>
+
+  <!-- PRACTICE -->
+  <section class="panel active" id="practice">
+    <div class="card">
+      <div class="pbar">
+        <div class="selectrow">
+          <label class="lbl" for="catSel">범위</label>
+          <select id="catSel"></select>
+          <select id="orderSel">
+            <option value="seq">순서대로</option>
+            <option value="random">무작위</option>
+          </select>
+        </div>
+        <span class="counter" id="counter"></span>
+      </div>
+
+      <div id="promptArea">
+        <span class="cat" id="pCat"></span>
+        <p class="ref" id="pRef"></p>
+        <p class="hint">위 주소의 말씀을 아래에 타이핑하세요. 띄어쓰기는 채점하지 않습니다.</p>
+        <textarea id="answer" placeholder="여기에 말씀을 입력하고 Ctrl+Enter 또는 채점하기를 누르세요…" spellcheck="false"></textarea>
+        <div class="actions">
+          <button class="btn primary" id="gradeBtn">채점하기</button>
+          <button class="btn subtle" id="retryBtn">재시험</button>
+          <button class="btn subtle" id="revealBtn">정답 보기</button>
+          <button class="btn subtle" id="nextBtn">다음 구절 →</button>
+        </div>
+
+        <div class="result" id="result">
+          <div class="score">
+            <span class="pct" id="pct"></span>
+            <span class="word">정확도</span>
+          </div>
+          <p class="meta" id="meta"></p>
+          <div class="graded" id="graded"></div>
+          <div class="legend">
+            <span><i class="dot ok"></i>맞음</span>
+            <span><i class="dot miss"></i>빠뜨리거나 다른 글자</span>
+            <span><i class="dot extra"></i>잘못 더 친 글자</span>
+          </div>
+          <div class="perfect" id="perfect">완벽합니다. 한 글자도 틀리지 않았어요.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ADD -->
+  <section class="panel" id="add">
+    <div class="card">
+      <div class="row2">
+        <div class="field">
+          <label for="aCat">주제 / 범위</label>
+          <input id="aCat" placeholder="예: 약속대로 오신 성령" list="catList">
+          <datalist id="catList"></datalist>
+        </div>
+        <div class="field">
+          <label for="aRef">말씀 주소</label>
+          <input id="aRef" placeholder="예: 사도행전 2:38">
+        </div>
+      </div>
+      <div class="field">
+        <label for="aText">말씀 본문</label>
+        <textarea class="mini" id="aText" placeholder="외울 본문을 그대로 붙여넣으세요." spellcheck="false"></textarea>
+      </div>
+      <p class="formnote">추가한 말씀은 이 브라우저에 저장되어 다음에 열어도 그대로 있습니다.</p>
+      <div class="actions">
+        <button class="btn primary" id="saveBtn">말씀 저장</button>
+        <span class="toast" id="toast">저장했습니다 ✓</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIST -->
+  <section class="panel" id="list">
+    <div class="card" id="listCard"></div>
+  </section>
+
+  <footer><span>“네 말씀은 내 발에 등이요 내 길에 빛이니이다”</span> · 시편 119:105</footer>
+</div>
+
+<script>
+// ---------- 기본 말씀 (PDF 내장) ----------
+const BASE = [
+  {cat:"약속대로 오신 성령", ref:"사도행전 2:38", text:"베드로가 이르되 너희가 회개하여 각각 예수 그리스도의 이름으로 세례를 받고 죄 사함을 받으라 그리하면 성령의 선물을 받으리니"},
+  {cat:"약속대로 오신 성령", ref:"고린도전서 12:13", text:"우리가 유대인이나 헬라인이나 종이나 자유인이나 다 한 성령으로 세례를 받아 한 몸이 되었고 또 다 한 성령을 마시게 하셨느니라"},
+  {cat:"우리 안에 계시는 성령", ref:"로마서 8:26", text:"이와 같이 성령도 우리의 연약함을 도우시나니 우리는 마땅히 기도할 바를 알지 못하나 오직 성령이 말할 수 없는 탄식으로 우리를 위하여 친히 간구하시느니라"},
+  {cat:"우리 안에 계시는 성령", ref:"갈라디아서 5:22,23", text:"오직 성령의 열매는 사랑과 희락과 화평과 오래 참음과 자비와 양선과 충성과 온유와 절제니 이같은 것을 금지할 법이 없느니라"},
+  {cat:"거듭난 사람", ref:"디도서 3:5", text:"우리를 구원하시되 우리가 행한 바 의로운 행위로 말미암지 아니하고 오직 그의 긍휼하심을 따라 중생의 씻음과 성령의 새롭게 하심으로 하셨나니"},
+  {cat:"거듭난 사람", ref:"데살로니가전서 1:3,4", text:"너희의 믿음의 역사와 사랑의 수고와 우리 주 예수 그리스도에 대한 소망의 인내를 우리 하나님 아버지 앞에서 끊임없이 기억함이니 하나님의 사랑하심을 받은 형제들아 너희를 택하심을 아노라"},
+  {cat:"믿음이란 무엇인가?", ref:"에베소서 2:8,9", text:"너희는 그 은혜에 의하여 믿음으로 말미암아 구원을 받았으니 이것은 너희에게서 난 것이 아니요 하나님의 선물이라 행위에서 난 것이 아니니 이는 누구든지 자랑하지 못하게 함이라"},
+  {cat:"믿음이란 무엇인가?", ref:"로마서 4:18", text:"아브라함이 바랄 수 없는 중에 바라고 믿었으니 이는 네 후손이 이같으리라 하신 말씀대로 많은 민족의 조상이 되게 하려 하심이라"},
+  {cat:"의롭다 함을 받은 은혜", ref:"로마서 3:21,22", text:"이제는 율법 외에 하나님의 한 의가 나타났으니 율법과 선지자들에게 증거를 받은 것이라 곧 예수 그리스도를 믿음으로 말미암아 모든 믿는 자에게 미치는 하나님의 의니 차별이 없느니라"},
+  {cat:"의롭다 함을 받은 은혜", ref:"로마서 8:32", text:"자기 아들을 아끼지 아니하시고 우리 모든 사람을 위하여 내주신 이가 어찌 그 아들과 함께 모든 것을 우리에게 주시지 아니하겠느냐"}
+];
+
+const STORE_KEY = "custom_verses_v1";
+let custom = [];   // 사용자가 추가한 말씀
+
+// ---------- 저장소 (artifact persistent storage, 실패 시 메모리) ----------
+async function loadCustom(){
+  try{
+    const r = await window.storage.get(STORE_KEY);
+    custom = r && r.value ? JSON.parse(r.value) : [];
+  }catch(e){ custom = []; }
+}
+async function saveCustom(){
+  try{ await window.storage.set(STORE_KEY, JSON.stringify(custom)); }
+  catch(e){ /* 메모리에만 유지 */ }
+}
+function allVerses(){
+  return BASE.map(v=>({...v, base:true})).concat(custom.map(v=>({...v, base:false})));
+}
+
+// ---------- 채점 핵심: 글자 단위 LCS diff (공백 제거 후) ----------
+function stripSpace(s){ return (s||"").replace(/\s+/g,""); }
+
+function lcsOps(a, b){
+  const n=a.length, m=b.length;
+  const dp=Array.from({length:n+1},()=>new Int32Array(m+1));
+  for(let i=1;i<=n;i++)for(let j=1;j<=m;j++){
+    dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1]+1 : Math.max(dp[i-1][j], dp[i][j-1]);
+  }
+  let i=n,j=m; const ops=[];
+  while(i>0 && j>0){
+    if(a[i-1]===b[j-1]){ ops.push({t:'eq', a:a[i-1]}); i--; j--; }
+    else if(dp[i-1][j] >= dp[i][j-1]){ ops.push({t:'del', a:a[i-1]}); i--; }   // 정답엔 있으나 안 침 = 빠뜨림
+    else { ops.push({t:'ins', b:b[j-1]}); j--; }                                // 입력에만 있음 = 잘못 더 침
+  }
+  while(i>0){ ops.push({t:'del', a:a[i-1]}); i--; }
+  while(j>0){ ops.push({t:'ins', b:b[j-1]}); j--; }
+  ops.reverse();
+  return ops;
+}
+
+function esc(c){ return c==='<'?'&lt;':c==='>'?'&gt;':c==='&'?'&amp;':c; }
+
+function grade(answerRaw, inputRaw){
+  const ansNoSp = stripSpace(answerRaw);
+  const inNoSp  = stripSpace(inputRaw);
+  const ops = lcsOps(ansNoSp, inNoSp);
+
+  let correct=0, missed=0, extra=0;
+  for(const o of ops){ if(o.t==='eq') correct++; else if(o.t==='del') missed++; else extra++; }
+
+  // 원문(공백 포함)에 매핑하여 렌더
+  let html=''; let k=0;
+  for(const ch of answerRaw){
+    if(/\s/.test(ch)){ html += ch; continue; }
+    while(ops[k] && ops[k].t==='ins'){ html += `<span class="extra">${esc(ops[k].b)}</span>`; k++; }
+    const op = ops[k++];
+    if(op && op.t==='eq') html += `<span class="ok">${esc(ch)}</span>`;
+    else html += `<span class="miss">${esc(ch)}</span>`;
+  }
+  while(ops[k] && ops[k].t==='ins'){ html += `<span class="extra">${esc(ops[k].b)}</span>`; k++; }
+
+  const total = ansNoSp.length || 1;
+  const pct = Math.round(correct/total*100);
+  return {html, pct, correct, missed, extra, perfect: missed===0 && extra===0};
+}
+
+// ---------- 상태 ----------
+let pool=[];      // 현재 범위의 구절 목록
+let order=[];     // 출제 순서(인덱스)
+let cursor=0;
+
+function buildPool(){
+  const all = allVerses();
+  const cat = document.getElementById('catSel').value;
+  pool = cat==='__all__' ? all : all.filter(v=>v.cat===cat);
+  order = pool.map((_,i)=>i);
+  if(document.getElementById('orderSel').value==='random'){
+    for(let i=order.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [order[i],order[j]]=[order[j],order[i]]; }
+  }
+  cursor=0;
+}
+
+function currentVerse(){ return pool[order[cursor]]; }
+
+function renderPrompt(){
+  const v = currentVerse();
+  if(!v){
+    document.getElementById('pCat').textContent='';
+    document.getElementById('pRef').textContent='말씀이 없습니다';
+    document.getElementById('counter').textContent='';
+    return;
+  }
+  document.getElementById('pCat').textContent = v.cat;
+  document.getElementById('pRef').textContent = v.ref;
+  document.getElementById('counter').textContent = `${cursor+1} / ${pool.length}`;
+  document.getElementById('answer').value='';
+  document.getElementById('result').classList.remove('show');
+  document.getElementById('perfect').style.display='none';
+  resetReveal();
+  document.getElementById('answer').focus();
+}
+
+function doGrade(){
+  const v = currentVerse(); if(!v) return;
+  const input = document.getElementById('answer').value;
+  if(!input.trim()){ document.getElementById('answer').focus(); return; }
+  const g = grade(v.text, input);
+  resetReveal();
+  document.getElementById('pct').textContent = g.pct + '%';
+  let meta = `맞은 글자 ${g.correct}자`;
+  if(g.missed) meta += ` · <b class="m">빠뜨림 ${g.missed}자</b>`;
+  if(g.extra)  meta += ` · <b class="e">잘못 친 글자 ${g.extra}자</b>`;
+  document.getElementById('meta').innerHTML = meta;
+  document.getElementById('graded').innerHTML = g.html;
+  document.getElementById('perfect').style.display = g.perfect ? 'block' : 'none';
+  document.getElementById('result').classList.add('show');
+}
+
+let revealOn=false;
+function resetReveal(){
+  revealOn=false;
+  document.getElementById('revealBtn').textContent='정답 보기';
+}
+function doReveal(){
+  const v = currentVerse(); if(!v) return;
+  if(revealOn){   // 이미 정답이 떠 있으면 닫기
+    document.getElementById('result').classList.remove('show');
+    resetReveal();
+    return;
+  }
+  document.getElementById('pct').textContent = '—';
+  document.getElementById('meta').innerHTML = '정답 본문입니다. 눈으로 익힌 뒤 다시 도전해 보세요.';
+  document.getElementById('graded').innerHTML = `<span class="ok">${v.text.split('').map(esc).join('')}</span>`;
+  document.getElementById('perfect').style.display='none';
+  document.getElementById('result').classList.add('show');
+  revealOn=true;
+  document.getElementById('revealBtn').textContent='정답 숨기기';
+}
+
+function doNext(){
+  if(pool.length===0) return;
+  cursor = (cursor+1) % pool.length;
+  renderPrompt();
+}
+
+// ---------- 범위 선택 옵션 ----------
+function rebuildCatSelect(){
+  const sel = document.getElementById('catSel');
+  const prev = sel.value;
+  const cats = [...new Set(allVerses().map(v=>v.cat))];
+  sel.innerHTML = `<option value="__all__">전체</option>` +
+    cats.map(c=>`<option value="${c.replace(/"/g,'&quot;')}">${c}</option>`).join('');
+  if(prev && [...sel.options].some(o=>o.value===prev)) sel.value=prev;
+  // datalist for add form
+  document.getElementById('catList').innerHTML = cats.map(c=>`<option value="${c.replace(/"/g,'&quot;')}">`).join('');
+}
+
+// ---------- 목록 렌더 ----------
+function renderList(){
+  const card = document.getElementById('listCard');
+  const all = allVerses();
+  const cats = [...new Set(all.map(v=>v.cat))];
+  let html='';
+  for(const c of cats){
+    html += `<div class="listcat">${c}</div>`;
+    all.forEach((v,idx)=>{
+      if(v.cat!==c) return;
+      const ci = v.base ? -1 : custom.findIndex(x=>x.ref===v.ref && x.text===v.text && x.cat===v.cat);
+      html += `<div class="vrow">
+        <span class="vref">${v.ref}</span>
+        <span class="vtext">${v.text}</span>
+        ${v.base ? '' : `<span class="vtag">추가됨</span><button class="del" data-ci="${ci}">삭제</button>`}
+      </div>`;
+    });
+  }
+  card.innerHTML = html;
+  card.querySelectorAll('.del').forEach(b=>{
+    b.onclick = async ()=>{
+      const ci = +b.dataset.ci;
+      if(ci>=0){ custom.splice(ci,1); await saveCustom(); rebuildCatSelect(); renderList(); buildPool(); renderPrompt(); }
+    };
+  });
+}
+
+// ---------- 탭 ----------
+document.querySelectorAll('.tab').forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.tab).classList.add('active');
+    if(t.dataset.tab==='list') renderList();
+  };
+});
+
+// ---------- 이벤트 ----------
+document.getElementById('gradeBtn').onclick = doGrade;
+document.getElementById('retryBtn').onclick = ()=>renderPrompt();  // 같은 구절 다시
+document.getElementById('revealBtn').onclick = doReveal;
+document.getElementById('nextBtn').onclick = doNext;
+document.getElementById('answer').addEventListener('keydown', e=>{
+  if((e.ctrlKey||e.metaKey) && e.key==='Enter'){ e.preventDefault(); doGrade(); }
+});
+document.getElementById('catSel').onchange = ()=>{ buildPool(); renderPrompt(); };
+document.getElementById('orderSel').onchange = ()=>{ buildPool(); renderPrompt(); };
+
+document.getElementById('saveBtn').onclick = async ()=>{
+  const cat = document.getElementById('aCat').value.trim();
+  const ref = document.getElementById('aRef').value.trim();
+  const text = document.getElementById('aText').value.trim();
+  if(!cat || !ref || !text){
+    const t=document.getElementById('toast');
+    t.textContent='주제·주소·본문을 모두 입력하세요';
+    t.style.color='#c0392b'; t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),1800);
+    return;
+  }
+  custom.push({cat, ref, text});
+  await saveCustom();
+  document.getElementById('aRef').value='';
+  document.getElementById('aText').value='';
+  const t=document.getElementById('toast');
+  t.textContent='저장했습니다 ✓'; t.style.color='var(--ok)'; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),1800);
+  rebuildCatSelect(); buildPool();
+};
+
+// ---------- 시작 ----------
+(async function init(){
+  await loadCustom();
+  rebuildCatSelect();
+  buildPool();
+  renderPrompt();
+})();
+</script>
+</body>
+</html>
