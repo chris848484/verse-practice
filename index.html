@@ -101,6 +101,13 @@
     font-size:15px;line-height:1.9;word-break:keep-all;
   }
   .hintbox.show{display:block;animation:fade .2s ease;}
+  .audio-card{margin:0 0 18px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--accent-soft);}
+  .audio-card h2{margin:0 0 8px;font-size:14px;color:var(--accent);}
+  .audio-card audio{display:block;width:100%;max-width:100%;height:48px;}
+  .audio-options{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;font-size:13px;}
+  .audio-options label{display:inline-flex;align-items:center;gap:5px;min-height:38px;}
+  .audio-options input{width:18px;height:18px;accent-color:var(--accent);}
+  .audio-note{font-size:12px;color:var(--ink-soft);margin:8px 0 0;}
 
   textarea{
     width:100%;min-height:140px;resize:vertical;
@@ -302,6 +309,22 @@ select{max-width:100%;}
         <p class="ref" id="pRef"></p><p class="body-q" id="pBody"></p>
         <p class="hint" id="answerHelp">위 주소의 말씀을 아래에 타이핑하세요. 띄어쓰기는 채점하지 않습니다.</p>
         <div class="hintbox" id="initialHint" aria-live="polite"></div>
+        <section class="audio-card" aria-labelledby="audioTitle">
+          <h2 id="audioTitle">AI 말씀 듣기</h2>
+          <audio id="verseAudio" controls preload="none" aria-label="현재 말씀 AI 낭독"></audio>
+          <div class="audio-options">
+            <label for="audioRate">속도</label>
+            <select id="audioRate">
+              <option value="0.75">느리게 · 0.75배</option>
+              <option value="1" selected>보통 · 1배</option>
+              <option value="1.25">빠르게 · 1.25배</option>
+            </select>
+            <label for="audioLoop"><input id="audioLoop" type="checkbox">반복 재생</label>
+            <button id="audioStop" type="button" class="ghost">처음으로</button>
+          </div>
+          <p class="audio-note">AI가 생성한 음성입니다. 재생 버튼을 눌러 들어보세요.</p>
+          <p class="audio-note" id="audioStatus" role="status" aria-live="polite">음성을 준비하고 있습니다.</p>
+        </section>
         <textarea id="answer" aria-label="암송할 말씀 입력" aria-describedby="answerHelp" placeholder="여기에 말씀을 입력하고 Ctrl+Enter 또는 채점하기를 누르세요…" spellcheck="false" maxlength="2000"></textarea>
         <p class="sr-only" id="practiceStatus" aria-live="polite"></p>
         <div class="choices" id="choices"></div><div class="actions">
@@ -826,7 +849,63 @@ function gradeExam(){
 }
 
 
+// ---------- 미리 생성한 AI 음성 재생 ----------
+const verseAudio=document.getElementById('verseAudio');
+let audioEntries=[];
+let audioManifestState='loading';
+
+function stopVerseAudio(){
+  verseAudio.pause();
+  if(verseAudio.hasAttribute('src')){
+    try{ verseAudio.currentTime=0; }catch(e){ /* 메타데이터 로드 전 */ }
+  }
+}
+function updateVerseAudio(){
+  stopVerseAudio();
+  const v=currentVerse();
+  const entry=v && audioEntries.find(item=>item.ref===v.ref && item.text===v.text);
+  const status=document.getElementById('audioStatus');
+  const available=Boolean(entry);
+  verseAudio.hidden=!available;
+  // display:block 스타일보다 hidden 속성이 우선하도록 명시합니다.
+  verseAudio.style.display=available?'block':'none';
+  ['audioRate','audioLoop','audioStop'].forEach(id=>document.getElementById(id).disabled=!available);
+  if(entry){
+    verseAudio.src=entry.file;
+    verseAudio.load();
+    verseAudio.playbackRate=Number(document.getElementById('audioRate').value);
+    verseAudio.loop=document.getElementById('audioLoop').checked;
+    status.textContent='현재 말씀의 본문을 읽어드립니다.';
+  }else{
+    verseAudio.removeAttribute('src');
+    verseAudio.load();
+    status.textContent=audioManifestState==='loading' ? '음성을 준비하고 있습니다.'
+      : audioManifestState==='error' ? '음성 목록을 불러오지 못했습니다. 연결을 확인하고 새로고침해 주세요.'
+      : '이 말씀은 아직 AI 음성이 준비되지 않았습니다.';
+  }
+}
+async function loadVerseAudio(){
+  try{
+    const response=await fetch('audio/manifest.json', {cache:'no-cache'});
+    if(!response.ok) throw new Error('Audio manifest unavailable');
+    const data=await response.json();
+    if(!Array.isArray(data.verses)) throw new Error('Invalid audio manifest');
+    audioEntries=data.verses.filter(item=>item && typeof item.ref==='string' && typeof item.text==='string'
+      && typeof item.file==='string' && /^audio\/verse-[a-f0-9]{20}\.mp3$/.test(item.file));
+    audioManifestState='ready';
+  }catch(e){ audioManifestState='error'; }
+  updateVerseAudio();
+}
+verseAudio.addEventListener('error',()=>{
+  if(verseAudio.hasAttribute('src')) document.getElementById('audioStatus').textContent='음성을 재생하지 못했습니다. 연결을 확인하고 말씀을 다시 선택해 주세요.';
+});
+document.getElementById('audioRate').onchange=e=>{verseAudio.playbackRate=Number(e.target.value);};
+document.getElementById('audioLoop').onchange=e=>{verseAudio.loop=e.target.checked;};
+document.getElementById('audioStop').onclick=stopVerseAudio;
+window.addEventListener('pagehide',stopVerseAudio);
+
 function renderPrompt(){
+  updateVerseAudio();
   renderTextPrompt();
   resetReveal();
   ['score','graded','legend'].forEach(id=>document.getElementById(id).style.display='');
@@ -857,6 +936,7 @@ function resetReveal(){
 // ---------- 탭 ----------
 const tabButtons=[...document.querySelectorAll('.tab')];
 function activateTab(tab,{focus=false}={}){
+  if(tab.dataset.tab!=='practice') stopVerseAudio();
   tabButtons.forEach(button=>{
     const selected=button===tab;
     button.classList.toggle('active',selected);
@@ -967,6 +1047,7 @@ document.getElementById('saveBtn').onclick = async ()=>{
   buildPool();
   renderPrompt();
 })();
+loadVerseAudio();
 </script>
 </body>
 </html>
