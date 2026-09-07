@@ -875,7 +875,7 @@ function updateVerseAudio(){
     verseAudio.load();
     verseAudio.playbackRate=Number(document.getElementById('audioRate').value);
     verseAudio.loop=document.getElementById('audioLoop').checked;
-    status.textContent='현재 말씀의 본문을 읽어드립니다.';
+    status.textContent='말씀 주소 → 본문 → 말씀 주소 순서로 읽어드립니다.';
   }else{
     verseAudio.removeAttribute('src');
     verseAudio.load();

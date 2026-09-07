@@ -3,3 +3,5 @@
 !.env.example
 node_modules/
 .github-upload/
+.tooling/
+audio/.parts/
