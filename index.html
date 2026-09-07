@@ -19,12 +19,13 @@
     --ok:#2a7a4f;
     --miss:#c0392b;
     --miss-bg:#fbe6e3;
-    --extra:#b8852a;
+    --extra:#85601b;
     --extra-bg:#f6edd9;
     --shadow:0 1px 2px rgba(35,40,43,.04),0 8px 28px rgba(35,40,43,.06);
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
+  button,select,input,textarea{font:inherit;}
   body{
     background:var(--paper);
     color:var(--ink);
@@ -56,6 +57,9 @@
   }
   .tab:hover{color:var(--ink);}
   .tab.active{background:var(--accent);color:#fff;}
+  .tab:focus-visible,.btn:focus-visible,.ghost:focus-visible,.del:focus-visible{
+    outline:3px solid rgba(47,111,106,.3);outline-offset:2px;
+  }
 
   .panel{display:none;animation:fade .25s ease;}
   .panel.active{display:block;}
@@ -90,12 +94,13 @@
     font-family:'Noto Serif KR',serif;font-weight:600;
     font-size:30px;letter-spacing:-.01em;line-height:1.3;margin:0 0 4px;
   }
-  .body-q{
-    font-family:'Noto Serif KR',serif;font-size:19px;line-height:1.9;
-    color:var(--ink);word-break:keep-all;
-    border-left:3px solid var(--accent);padding-left:16px;margin:0 0 4px;display:none;
-  }
   .hint{font-size:12.5px;color:var(--ink-soft);margin-bottom:18px;}
+  .hintbox{
+    display:none;margin:-6px 0 18px;padding:12px 14px;border-radius:10px;
+    background:var(--accent-soft);color:var(--accent);font-family:'Noto Serif KR',serif;
+    font-size:15px;line-height:1.9;word-break:keep-all;
+  }
+  .hintbox.show{display:block;animation:fade .2s ease;}
 
   textarea{
     width:100%;min-height:140px;resize:vertical;
@@ -107,19 +112,6 @@
   textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
   textarea::placeholder{color:#b6bcbb;}
 
-  .choices{display:none;grid-template-columns:1fr 1fr;gap:10px;margin-top:2px;}
-  .choice{
-    font-family:'Noto Serif KR',serif;font-size:16px;font-weight:600;
-    text-align:left;padding:14px 16px;border-radius:11px;
-    border:1px solid var(--line);background:#fdfdfc;color:var(--ink);
-    cursor:pointer;transition:.15s;
-  }
-  .choice:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft);}
-  .choice:disabled{cursor:default;}
-  .choice.correct{border-color:var(--ok);background:#e7f3ec;color:var(--ok);}
-  .choice.wrong{border-color:var(--miss);background:var(--miss-bg);color:var(--miss);}
-  @media(max-width:480px){.choices{grid-template-columns:1fr;}}
-
   .actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
   .btn{
     appearance:none;border:0;cursor:pointer;font-family:inherit;
@@ -129,6 +121,7 @@
   .btn.primary:hover{background:#27605c;}
   .btn.subtle{background:var(--paper);color:var(--ink-soft);border:1px solid var(--line);}
   .btn.subtle:hover{color:var(--ink);border-color:#cfd3cd;}
+  .btn:disabled{cursor:not-allowed;opacity:.48;}
 
   /* result */
   .result{margin-top:22px;padding-top:22px;border-top:1px solid var(--line);display:none;}
@@ -196,6 +189,54 @@
   .del:hover{background:var(--miss-bg);}
   .empty{color:var(--ink-soft);font-size:13.5px;padding:8px 0;}
 
+  .sr-only{
+    position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+    clip:rect(0,0,0,0);white-space:nowrap;border:0;
+  }
+
+  footer{text-align:center;font-size:11.5px;color:#737c79;margin-top:28px;}
+  footer span{font-family:'Noto Serif KR',serif;}
+
+  @media (max-width:560px){
+    body{padding:18px 12px 56px;}
+    header.top{align-items:stretch;gap:12px;}
+    .brand{display:block;}
+    .brand .sub{display:block;margin-top:2px;}
+    .tabs{width:100%;}
+    .tab{flex:1;padding-inline:8px;}
+    .card{padding:21px 17px;border-radius:14px;}
+    .ref{font-size:26px;}
+    textarea{font-size:17px;min-height:160px;}
+    .row2{display:block;}
+    .vrow{display:grid;grid-template-columns:1fr auto;gap:6px 10px;}
+    .vref{grid-column:1;font-size:13.5px;min-width:0;}
+    .vtext{grid-column:1 / -1;grid-row:2;}
+    .vtag,.del{grid-column:2;grid-row:1;}
+    .vtag:has(+ .del){display:none;}
+    .actions .btn{flex:1 1 calc(50% - 5px);padding-inline:12px;}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}
+  }
+  .body-q{
+    font-family:'Noto Serif KR',serif;font-size:19px;line-height:1.9;
+    color:var(--ink);word-break:keep-all;
+    border-left:3px solid var(--accent);padding-left:16px;margin:0 0 4px;display:none;
+  }
+  .choices{display:none;grid-template-columns:1fr 1fr;gap:10px;margin-top:2px;}
+  .choice{
+    font-family:'Noto Serif KR',serif;font-size:16px;font-weight:600;
+    text-align:left;padding:14px 16px;border-radius:11px;
+    border:1px solid var(--line);background:#fdfdfc;color:var(--ink);
+    cursor:pointer;transition:.15s;
+  }
+  .choice:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft);}
+  .choice:disabled{cursor:default;}
+  .choice.correct{border-color:var(--ok);background:#e7f3ec;color:var(--ok);}
+  .choice.wrong{border-color:var(--miss);background:var(--miss-bg);color:var(--miss);}
+  @media(max-width:480px){.choices{grid-template-columns:1fr;}}
+
   /* exam */
   .exam-item{padding:18px 0;border-bottom:1px solid var(--line);}
   .exam-item:first-child{padding-top:2px;}
@@ -219,8 +260,9 @@
   .exam-total .pct{font-family:'Noto Serif KR',serif;font-size:34px;font-weight:700;color:var(--accent);}
   .exam-total .word{font-size:13.5px;color:var(--ink-soft);}
 
-  footer{text-align:center;font-size:11.5px;color:#a7adab;margin-top:28px;}
-  footer span{font-family:'Noto Serif KR',serif;}
+
+.choices .choice:focus-visible{outline:3px solid var(--accent);outline-offset:2px;}
+select{max-width:100%;}
 </style>
 </head>
 <body>
@@ -230,50 +272,47 @@
       <h1>말씀 암송 연습</h1>
       <span class="sub">주소를 보고, 손으로 새겨 외우기</span>
     </div>
-    <div class="tabs">
-      <button class="tab active" data-tab="practice">연습</button>
-      <button class="tab" data-tab="exam">모의시험</button>
-      <button class="tab" data-tab="add">말씀 추가</button>
-      <button class="tab" data-tab="list">목록</button>
+    <div class="tabs" role="tablist" aria-label="암송 프로그램 메뉴">
+      <button type="button" class="tab active" id="tab-practice" data-tab="practice" role="tab" aria-controls="practice" aria-selected="true">연습</button>
+      <button type="button" class="tab" id="tab-exam" data-tab="exam" role="tab" aria-controls="exam" aria-selected="false" tabindex="-1">모의시험</button>
+      <button type="button" class="tab" id="tab-add" data-tab="add" role="tab" aria-controls="add" aria-selected="false" tabindex="-1">말씀 추가</button>
+      <button type="button" class="tab" id="tab-list" data-tab="list" role="tab" aria-controls="list" aria-selected="false" tabindex="-1">목록</button>
     </div>
   </header>
 
   <!-- PRACTICE -->
-  <section class="panel active" id="practice">
+  <section class="panel active" id="practice" role="tabpanel" aria-labelledby="tab-practice">
     <div class="card">
       <div class="pbar">
         <div class="selectrow">
-          <label class="lbl" for="typeSel">유형</label>
-          <select id="typeSel">
-            <option value="toText">주소 → 말씀</option>
-            <option value="toRef">말씀 → 주소</option>
-          </select>
+          <label class="lbl" for="typeSel">유형</label><select id="typeSel"><option value="toText">주소 → 말씀</option><option value="toRef">말씀 → 주소</option></select>
           <label class="lbl" for="catSel">범위</label>
           <select id="catSel"></select>
+          <label class="sr-only" for="orderSel">출제 순서</label>
           <select id="orderSel">
             <option value="seq">순서대로</option>
             <option value="random">무작위</option>
           </select>
         </div>
-        <span class="counter" id="counter"></span>
+        <span class="counter" id="counter" aria-live="polite"></span>
       </div>
 
       <div id="promptArea">
         <span class="cat" id="pCat"></span>
-        <p class="ref" id="pRef"></p>
-        <p class="body-q" id="pBody"></p>
-        <p class="hint" id="pHint">위 주소의 말씀을 아래에 타이핑하세요. 띄어쓰기는 채점하지 않습니다.</p>
-        <textarea id="answer" placeholder="여기에 말씀을 입력하고 Ctrl+Enter 또는 채점하기를 누르세요…" spellcheck="false"></textarea>
-        <div class="choices" id="choices"></div>
-        <div class="actions">
-          <button class="btn primary" id="gradeBtn">채점하기</button>
-          <button class="btn subtle" id="retryBtn">재시험</button>
-          <button class="btn subtle" id="revealBtn">정답 보기</button>
-          <button class="btn subtle" id="prevBtn">← 이전 구절</button>
-          <button class="btn subtle" id="nextBtn">다음 구절 →</button>
+        <p class="ref" id="pRef"></p><p class="body-q" id="pBody"></p>
+        <p class="hint" id="answerHelp">위 주소의 말씀을 아래에 타이핑하세요. 띄어쓰기는 채점하지 않습니다.</p>
+        <div class="hintbox" id="initialHint" aria-live="polite"></div>
+        <textarea id="answer" aria-label="암송할 말씀 입력" aria-describedby="answerHelp" placeholder="여기에 말씀을 입력하고 Ctrl+Enter 또는 채점하기를 누르세요…" spellcheck="false" maxlength="2000"></textarea>
+        <p class="sr-only" id="practiceStatus" aria-live="polite"></p>
+        <div class="choices" id="choices"></div><div class="actions">
+          <button type="button" class="btn primary" id="gradeBtn">채점하기</button>
+          <button type="button" class="btn subtle" id="retryBtn">재시험</button><button type="button" class="btn subtle" id="hintBtn" aria-expanded="false" aria-controls="initialHint">첫 글자 힌트</button>
+          <button type="button" class="btn subtle" id="revealBtn">정답 보기</button>
+          <button type="button" class="btn subtle" id="prevBtn">← 이전 구절</button>
+          <button type="button" class="btn subtle" id="nextBtn">다음 구절 →</button>
         </div>
 
-        <div class="result" id="result">
+        <div class="result" id="result" role="region" aria-label="채점 결과">
           <div class="score" id="score">
             <span class="pct" id="pct"></span>
             <span class="word">정확도</span>
@@ -292,39 +331,39 @@
   </section>
 
   <!-- ADD -->
-  <section class="panel" id="add">
+  <section class="panel" id="add" role="tabpanel" aria-labelledby="tab-add" hidden>
     <div class="card">
       <div class="row2">
         <div class="field">
           <label for="aCat">주제 / 범위</label>
-          <input id="aCat" placeholder="예: 약속대로 오신 성령" list="catList">
+          <input id="aCat" placeholder="예: 3권 3과 · 그리스도를 증거하는 생활" list="catList" maxlength="80" autocomplete="off">
           <datalist id="catList"></datalist>
         </div>
         <div class="field">
           <label for="aRef">말씀 주소</label>
-          <input id="aRef" placeholder="예: 사도행전 2:38">
+          <input id="aRef" placeholder="예: 사도행전 2:38" maxlength="60" autocomplete="off">
         </div>
       </div>
       <div class="field">
         <label for="aText">말씀 본문</label>
-        <textarea class="mini" id="aText" placeholder="외울 본문을 그대로 붙여넣으세요." spellcheck="false"></textarea>
+        <textarea class="mini" id="aText" placeholder="외울 본문을 그대로 붙여넣으세요." spellcheck="false" maxlength="2000"></textarea>
       </div>
       <p class="formnote">추가한 말씀은 이 브라우저에 저장되어 다음에 열어도 그대로 있습니다.</p>
       <div class="actions">
-        <button class="btn primary" id="saveBtn">말씀 저장</button>
-        <span class="toast" id="toast">저장했습니다 ✓</span>
+        <button type="button" class="btn primary" id="saveBtn">말씀 저장</button>
+        <span class="toast" id="toast" role="status" aria-live="polite">저장했습니다 ✓</span>
       </div>
     </div>
   </section>
 
   <!-- EXAM -->
-  <section class="panel" id="exam">
+  <section class="panel" id="exam" role="tabpanel" aria-labelledby="tab-exam" hidden>
     <div class="card">
       <div class="pbar">
         <div class="selectrow">
           <label class="lbl" for="examCat">범위</label>
           <select id="examCat"></select>
-          <select id="examOrder">
+          <select id="examOrder" aria-label="모의시험 출제 순서">
             <option value="seq">순서대로</option>
             <option value="random">무작위</option>
           </select>
@@ -336,12 +375,12 @@
       <div class="actions">
         <button class="btn primary" id="examSubmit">전체 채점</button>
       </div>
-      <div id="examResult"></div>
+      <div id="examResult" role="status" aria-live="polite"></div>
     </div>
   </section>
 
   <!-- LIST -->
-  <section class="panel" id="list">
+  <section class="panel" id="list" role="tabpanel" aria-labelledby="tab-list" hidden>
     <div class="card" id="listCard"></div>
   </section>
 
@@ -349,40 +388,80 @@
 </div>
 
 <script>
-// ---------- 기본 말씀 (PDF 내장) ----------
+// ---------- 기본 말씀 ----------
 const BASE = [
-  {cat:"약속대로 오신 성령", ref:"사도행전 2:38", text:"베드로가 이르되 너희가 회개하여 각각 예수 그리스도의 이름으로 세례를 받고 죄 사함을 받으라 그리하면 성령의 선물을 받으리니"},
-  {cat:"약속대로 오신 성령", ref:"고린도전서 12:13", text:"우리가 유대인이나 헬라인이나 종이나 자유인이나 다 한 성령으로 세례를 받아 한 몸이 되었고 또 다 한 성령을 마시게 하셨느니라"},
-  {cat:"우리 안에 계시는 성령", ref:"로마서 8:26", text:"이와 같이 성령도 우리의 연약함을 도우시나니 우리는 마땅히 기도할 바를 알지 못하나 오직 성령이 말할 수 없는 탄식으로 우리를 위하여 친히 간구하시느니라"},
-  {cat:"우리 안에 계시는 성령", ref:"갈라디아서 5:22,23", text:"오직 성령의 열매는 사랑과 희락과 화평과 오래 참음과 자비와 양선과 충성과 온유와 절제니 이같은 것을 금지할 법이 없느니라"},
-  {cat:"거듭난 사람", ref:"디도서 3:5", text:"우리를 구원하시되 우리가 행한 바 의로운 행위로 말미암지 아니하고 오직 그의 긍휼하심을 따라 중생의 씻음과 성령의 새롭게 하심으로 하셨나니"},
-  {cat:"거듭난 사람", ref:"데살로니가전서 1:3,4", text:"너희의 믿음의 역사와 사랑의 수고와 우리 주 예수 그리스도에 대한 소망의 인내를 우리 하나님 아버지 앞에서 끊임없이 기억함이니 하나님의 사랑하심을 받은 형제들아 너희를 택하심을 아노라"},
-  {cat:"믿음이란 무엇인가?", ref:"에베소서 2:8,9", text:"너희는 그 은혜에 의하여 믿음으로 말미암아 구원을 받았으니 이것은 너희에게서 난 것이 아니요 하나님의 선물이라 행위에서 난 것이 아니니 이는 누구든지 자랑하지 못하게 함이라"},
-  {cat:"믿음이란 무엇인가?", ref:"로마서 4:18", text:"아브라함이 바랄 수 없는 중에 바라고 믿었으니 이는 네 후손이 이같으리라 하신 말씀대로 많은 민족의 조상이 되게 하려 하심이라"},
-  {cat:"의롭다 함을 받은 은혜", ref:"로마서 3:21,22", text:"이제는 율법 외에 하나님의 한 의가 나타났으니 율법과 선지자들에게 증거를 받은 것이라 곧 예수 그리스도를 믿음으로 말미암아 모든 믿는 자에게 미치는 하나님의 의니 차별이 없느니라"},
-  {cat:"의롭다 함을 받은 은혜", ref:"로마서 8:32", text:"자기 아들을 아끼지 아니하시고 우리 모든 사람을 위하여 내주신 이가 어찌 그 아들과 함께 모든 것을 우리에게 주시지 아니하겠느냐"}
+  {cat:"2권 13과 · 그리스도인의 성화", ref:"고후 7:1", text:"그런즉 사랑하는 자들아 이 약속을 가진 우리는 하나님을 두려워하는 가운데서 거룩함을 온전히 이루어 육과 영의 온갖 더러운 것에서 자신을 깨끗하게 하자"},
+  {cat:"2권 13과 · 그리스도인의 성화", ref:"요일 3:3", text:"주를 향하여 이 소망을 가진 자마다 그의 깨끗하심과 같이 자기를 깨끗하게 하느니라"},
+  {cat:"2권 14과 · 예수 그리스도의 재림", ref:"계 22:7", text:"보라 내가 속히 오리니 이 두루마리의 예언의 말씀을 지키는 자는 복이 있으리라 하더라"},
+  {cat:"2권 14과 · 예수 그리스도의 재림", ref:"살전 4:16-17", text:"주께서 호령과 천사장의 소리와 하나님의 나팔 소리로 친히 하늘로부터 강림하시리니 그리스도 안에서 죽은 자들이 먼저 일어나고 그 후에 우리 살아 남은 자들도 그들과 함께 구름 속으로 끌어 올려 공중에서 주를 영접하게 하시리니 그리하여 우리가 항상 주와 함께 있으리라"},
+  {cat:"3권 1과 · 순종의 생활", ref:"마 7:24", text:"그러므로 누구든지 나의 이 말을 듣고 행하는 자는 그 집을 반석 위에 지은 지혜로운 사람 같으리니"},
+  {cat:"3권 1과 · 순종의 생활", ref:"요 14:21", text:"나의 계명을 지키는 자라야 나를 사랑하는 자니 나를 사랑하는 자는 내 아버지께 사랑을 받을 것이요 나도 그를 사랑하여 그에게 나를 나타내리라"},
+  {cat:"3권 2과 · 봉사의 의무", ref:"빌 2:3-4", text:"아무 일에든지 다툼이나 허영으로 하지 말고 오직 겸손한 마음으로 각각 자기보다 남을 낫게 여기고 각각 자기 일을 돌볼뿐더러 또한 각각 다른 사람들의 일을 돌보아 나의 기쁨을 충만하게 하라"},
+  {cat:"3권 2과 · 봉사의 의무", ref:"벧전 4:11", text:"만일 누가 말하려면 하나님의 말씀을 하는 것 같이 하고 누가 봉사하려면 하나님이 공급하시는 힘으로 하는 것 같이 하라"}
 ];
 
 const STORE_KEY = "custom_verses_v1";
+const PREF_KEY = "memorize_preferences_v1";
 let custom = [];   // 사용자가 추가한 말씀
+let preferences = {cat:"__all__", order:"seq"};
 
-// ---------- 저장소 (artifact persistent storage, 실패 시 메모리) ----------
+function normalizeVerse(v){
+  if(!v || typeof v.cat!=='string' || typeof v.ref!=='string' || typeof v.text!=='string') return null;
+  const cat=v.cat.trim().slice(0,80);
+  const ref=v.ref.trim().slice(0,60);
+  const text=v.text.trim().slice(0,2000);
+  return cat && ref && text ? {cat,ref,text} : null;
+}
+
+function parseVerseArray(value){
+  return Array.isArray(value) ? value.map(normalizeVerse).filter(Boolean) : [];
+}
+
+// ---------- 저장소 (일반 브라우저 localStorage + 기존 환경 호환) ----------
 async function loadCustom(){
+  let value=null, found=false, localRaw=null;
   try{
-    const r = await window.storage.get(STORE_KEY);
-    custom = r && r.value ? JSON.parse(r.value) : [];
-  }catch(e){ custom = []; }
+    localRaw=localStorage.getItem(STORE_KEY);
+    if(localRaw!==null){ value=JSON.parse(localRaw); found=true; }
+  }catch(e){
+    if(localRaw!==null){ value=[]; found=true; }
+  }
+  if(!found && window.storage && typeof window.storage.get==='function'){
+    try{
+      const r=await window.storage.get(STORE_KEY);
+      if(r && r.value){ value=JSON.parse(r.value); found=true; }
+    }catch(e){ /* 사용자 추가 말씀 없이 시작 */ }
+  }
+  custom=parseVerseArray(value);
+  if(found) await saveCustom(); // 손상되거나 오래된 데이터 구조도 정리
 }
 async function saveCustom(){
-  try{ await window.storage.set(STORE_KEY, JSON.stringify(custom)); }
-  catch(e){ /* 메모리에만 유지 */ }
+  const value=JSON.stringify(custom);
+  let saved=false;
+  try{ localStorage.setItem(STORE_KEY,value); saved=true; }catch(e){ /* 호환 저장소를 시도 */ }
+  if(window.storage && typeof window.storage.set==='function'){
+    try{ await window.storage.set(STORE_KEY,value); saved=true; }catch(e){ /* 메모리에는 유지 */ }
+  }
+  return saved;
+}
+function loadPreferences(){
+  try{
+    const value=JSON.parse(localStorage.getItem(PREF_KEY)||'null');
+    if(value && typeof value==='object'){
+      preferences.cat=typeof value.cat==='string' ? value.cat : "__all__";
+      preferences.order=value.order==='random' ? 'random' : 'seq';
+    }
+  }catch(e){ preferences={cat:"__all__",order:"seq"}; }
+}
+function savePreferences(){
+  try{ localStorage.setItem(PREF_KEY,JSON.stringify(preferences)); }catch(e){ /* 선택값 저장 생략 */ }
 }
 function allVerses(){
-  return BASE.map(v=>({...v, base:true})).concat(custom.map(v=>({...v, base:false})));
+  return BASE.map(v=>({...v, base:true})).concat(custom.map((v,customIndex)=>({...v, base:false, customIndex})));
 }
 
 // ---------- 채점 핵심: 글자 단위 LCS diff (공백 제거 후) ----------
-function stripSpace(s){ return (s||"").replace(/\s+/g,""); }
+function stripSpace(s){ return String(s||"").normalize('NFC').replace(/\s+/gu,""); }
 
 function lcsOps(a, b){
   const n=a.length, m=b.length;
@@ -402,10 +481,15 @@ function lcsOps(a, b){
   return ops;
 }
 
-function esc(c){ return c==='<'?'&lt;':c==='>'?'&gt;':c==='&'?'&amp;':c; }
+function esc(value){
+  return String(value).replace(/[&<>"']/g,c=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  })[c]);
+}
 
 function grade(answerRaw, inputRaw){
-  const ansNoSp = stripSpace(answerRaw);
+  const answer = String(answerRaw||"").normalize('NFC');
+  const ansNoSp = stripSpace(answer);
   const inNoSp  = stripSpace(inputRaw);
   const ops = lcsOps(ansNoSp, inNoSp);
 
@@ -414,7 +498,7 @@ function grade(answerRaw, inputRaw){
 
   // 원문(공백 포함)에 매핑하여 렌더
   let html=''; let k=0;
-  for(const ch of answerRaw){
+  for(const ch of answer){
     if(/\s/.test(ch)){ html += ch; continue; }
     while(ops[k] && ops[k].t==='ins'){ html += `<span class="extra">${esc(ops[k].b)}</span>`; k++; }
     const op = ops[k++];
@@ -423,7 +507,7 @@ function grade(answerRaw, inputRaw){
   }
   while(ops[k] && ops[k].t==='ins'){ html += `<span class="extra">${esc(ops[k].b)}</span>`; k++; }
 
-  const total = ansNoSp.length || 1;
+  const total = Math.max(ansNoSp.length,inNoSp.length,1);
   const pct = Math.round(correct/total*100);
   return {html, pct, correct, missed, extra, perfect: missed===0 && extra===0};
 }
@@ -445,6 +529,213 @@ function buildPool(){
 }
 
 function currentVerse(){ return pool[order[cursor]]; }
+
+function resetHint(){
+  const box=document.getElementById('initialHint');
+  const button=document.getElementById('hintBtn');
+  box.textContent='';
+  box.classList.remove('show');
+  button.setAttribute('aria-expanded','false');
+  button.textContent='첫 글자 힌트';
+}
+
+function setPracticeControls(hasVerse){
+  ['gradeBtn','hintBtn','revealBtn'].forEach(id=>{
+    document.getElementById(id).disabled=!hasVerse;
+  });
+  const canMove=hasVerse && pool.length>1;
+  document.getElementById('prevBtn').disabled=!canMove;
+  document.getElementById('nextBtn').disabled=!canMove;
+}
+
+function renderTextPrompt(){
+  const v = currentVerse();
+  const answer=document.getElementById('answer');
+  answer.value='';
+  document.getElementById('result').classList.remove('show');
+  document.getElementById('perfect').style.display='none';
+  document.getElementById('practiceStatus').textContent='';
+  resetHint();
+  setPracticeControls(Boolean(v));
+
+  if(!v){
+    document.getElementById('pCat').textContent='';
+    document.getElementById('pRef').textContent='말씀이 없습니다';
+    document.getElementById('counter').textContent='';
+    return;
+  }
+  document.getElementById('pCat').textContent = v.cat;
+  document.getElementById('pRef').textContent = v.ref;
+  document.getElementById('counter').textContent = (cursor+1)+' / '+pool.length;
+  if(!document.getElementById('practice').hidden) answer.focus();
+}
+
+function doGrade(){
+  if(currentMode()==='toRef') return;
+  resetReveal();
+  const v = currentVerse(); if(!v) return;
+  const answer=document.getElementById('answer');
+  const input = answer.value;
+  if(!input.trim()){
+    document.getElementById('practiceStatus').textContent='답안을 먼저 입력하세요.';
+    answer.focus();
+    return;
+  }
+  const g = grade(v.text, input);
+  document.getElementById('pct').textContent = g.pct + '%';
+
+  const meta=document.getElementById('meta');
+  meta.replaceChildren(document.createTextNode('맞은 글자 '+g.correct+'자'));
+  if(g.missed){
+    const missed=document.createElement('b');
+    missed.className='m';
+    missed.textContent=' · 빠뜨림 '+g.missed+'자';
+    meta.append(missed);
+  }
+  if(g.extra){
+    const extra=document.createElement('b');
+    extra.className='e';
+    extra.textContent=' · 잘못 친 글자 '+g.extra+'자';
+    meta.append(extra);
+  }
+
+  document.getElementById('graded').innerHTML = g.html;
+  document.getElementById('perfect').style.display = g.perfect ? 'block' : 'none';
+  document.getElementById('result').classList.add('show');
+  document.getElementById('practiceStatus').textContent = g.perfect
+    ? '정확도 100퍼센트. 완벽합니다.'
+    : '정확도 '+g.pct+'퍼센트, 빠뜨림 '+g.missed+'자, 잘못 친 글자 '+g.extra+'자입니다.';
+}
+
+function doReveal(){
+  if(revealOn){
+    document.getElementById('result').classList.remove('show');
+    resetReveal(); return;
+  }
+  revealOn=true;
+  document.getElementById('revealBtn').textContent='정답 숨기기';
+  const v = currentVerse(); if(!v) return;
+  document.getElementById('pct').textContent = '—';
+  document.getElementById('meta').textContent = '정답 본문입니다. 눈으로 익힌 뒤 다시 도전해 보세요.';
+  document.getElementById('graded').innerHTML = '<span class="ok">'+Array.from(v.text).map(esc).join('')+'</span>';
+  document.getElementById('perfect').style.display='none';
+  document.getElementById('result').classList.add('show');
+  document.getElementById('practiceStatus').textContent='정답을 표시했습니다.';
+}
+
+function toggleHint(){
+  const v=currentVerse(); if(!v) return;
+  const box=document.getElementById('initialHint');
+  const button=document.getElementById('hintBtn');
+  const willShow=!box.classList.contains('show');
+  if(willShow){
+    box.textContent=v.text.normalize('NFC').trim().split(/\s+/u)
+      .map(word=>Array.from(word)[0]||'').join(' · ');
+  }
+  box.classList.toggle('show',willShow);
+  button.setAttribute('aria-expanded',String(willShow));
+  button.textContent=willShow ? '힌트 닫기' : '첫 글자 힌트';
+}
+
+function moveVerse(delta){
+  if(pool.length<2) return;
+  cursor = (cursor+delta+pool.length) % pool.length;
+  renderPrompt();
+}
+function doPrev(){ moveVerse(-1); }
+function doNext(){ moveVerse(1); }
+
+// ---------- 범위 선택 옵션 ----------
+function rebuildCatSelect(){
+  const sel = document.getElementById('catSel');
+  const desired = sel.value || preferences.cat;
+  const cats = [...new Set(allVerses().map(v=>v.cat))];
+  sel.replaceChildren(new Option('전체','__all__'));
+  cats.forEach(c=>sel.add(new Option(c,c)));
+  sel.value=[...sel.options].some(o=>o.value===desired) ? desired : '__all__';
+  preferences.cat=sel.value;
+
+  // datalist for add form
+  const list=document.getElementById('catList');
+  const options=cats.map(c=>{
+    const option=document.createElement('option');
+    option.value=c;
+    return option;
+  });
+  list.replaceChildren(...options);
+  const examSel=document.getElementById('examCat');
+  const previous=examSel.value;
+  examSel.replaceChildren(new Option('전체','__all__'));
+  cats.forEach(c=>examSel.add(new Option(c,c)));
+  if([...examSel.options].some(o=>o.value===previous)) examSel.value=previous;
+
+}
+
+// ---------- 목록 렌더 ----------
+function renderList(){
+  const card = document.getElementById('listCard');
+  const all = allVerses();
+  const cats = [...new Set(all.map(v=>v.cat))];
+  card.replaceChildren();
+
+  if(!all.length){
+    const empty=document.createElement('p');
+    empty.className='empty';
+    empty.textContent='저장된 말씀이 없습니다.';
+    card.append(empty);
+    return;
+  }
+
+  for(const c of cats){
+    const heading=document.createElement('div');
+    heading.className='listcat';
+    heading.textContent=c;
+    card.append(heading);
+
+    all.filter(v=>v.cat===c).forEach(v=>{
+      const row=document.createElement('div');
+      row.className='vrow';
+
+      const ref=document.createElement('span');
+      ref.className='vref';
+      ref.textContent=v.ref;
+      row.append(ref);
+
+      const text=document.createElement('span');
+      text.className='vtext';
+      text.textContent=v.text;
+      row.append(text);
+
+      if(!v.base){
+        const tag=document.createElement('span');
+        tag.className='vtag';
+        tag.textContent='추가됨';
+        row.append(tag);
+
+        const del=document.createElement('button');
+        del.type='button';
+        del.className='del';
+        del.dataset.ci=String(v.customIndex);
+        del.textContent='삭제';
+        del.setAttribute('aria-label',v.ref+' 삭제');
+        del.onclick=async ()=>{
+          if(!window.confirm(v.ref+' 말씀을 삭제할까요?')) return;
+          const ci=Number(del.dataset.ci);
+          if(!Number.isInteger(ci) || ci<0 || ci>=custom.length) return;
+          custom.splice(ci,1);
+          const saved=await saveCustom();
+          rebuildCatSelect();
+          buildPool();
+          renderPrompt();
+          renderList();
+          if(!saved) window.alert('저장 기능이 제한되어 새로고침하면 삭제가 되돌아올 수 있습니다.');
+        };
+        row.append(del);
+      }
+      card.append(row);
+    });
+  }
+}
 
 function currentMode(){ return document.getElementById('typeSel').value; }
 
@@ -484,134 +775,10 @@ function pickChoice(btn, chosen, correct, cdiv){
   document.getElementById('legend').style.display='none';
   document.getElementById('perfect').style.display='none';
   const meta=document.getElementById('meta');
-  meta.innerHTML = ok ? '정답입니다. ✓' : `아쉽네요. 정답은 <b>${correct}</b> 입니다.`;
+  meta.textContent = ok ? '정답입니다. ✓' : '아쉽네요. 정답은 '+correct+' 입니다.';
   meta.style.color = ok ? 'var(--ok)' : 'var(--miss)';
   document.getElementById('result').classList.add('show');
-}
-
-function renderPrompt(){
-  const v = currentVerse();
-  const mode = currentMode();
-  const refEl = document.getElementById('pRef');
-  const bodyEl = document.getElementById('pBody');
-  const ans = document.getElementById('answer');
-  const choices = document.getElementById('choices');
-  const gradeBtn = document.getElementById('gradeBtn');
-  const revealBtn = document.getElementById('revealBtn');
-
-  if(!v){
-    document.getElementById('pCat').textContent='';
-    refEl.textContent='말씀이 없습니다'; refEl.style.display='block';
-    bodyEl.style.display='none';
-    document.getElementById('counter').textContent='';
-    return;
-  }
-  document.getElementById('pCat').textContent = v.cat;
-  document.getElementById('counter').textContent = `${cursor+1} / ${pool.length}`;
-  document.getElementById('result').classList.remove('show');
-  document.getElementById('perfect').style.display='none';
-  resetReveal();
-
-  if(mode==='toRef'){
-    bodyEl.textContent = v.text; bodyEl.style.display='block';
-    refEl.style.display='none';
-    document.getElementById('pHint').textContent='이 말씀이 어디 말씀인지 아래에서 골라보세요.';
-    ans.style.display='none';
-    gradeBtn.style.display='none';
-    revealBtn.style.display='none';
-    choices.style.display='grid';
-    choices.innerHTML='';
-    buildChoices(v).forEach(opt=>{
-      const b=document.createElement('button');
-      b.className='choice'; b.type='button'; b.textContent=opt;
-      b.onclick=()=>pickChoice(b, opt, v.ref, choices);
-      choices.appendChild(b);
-    });
-  }else{
-    refEl.textContent = v.ref; refEl.style.display='block';
-    bodyEl.style.display='none';
-    document.getElementById('pHint').textContent='위 주소의 말씀을 아래에 타이핑하세요. 띄어쓰기는 채점하지 않습니다.';
-    ans.style.display='block';
-    ans.style.minHeight='140px';
-    ans.value='';
-    gradeBtn.style.display='';
-    revealBtn.style.display='';
-    choices.style.display='none';
-    choices.innerHTML='';
-    ans.focus();
-  }
-}
-
-function doGrade(){
-  if(currentMode()==='toRef') return;   // 객관식은 선택지 클릭으로 채점
-  const v = currentVerse(); if(!v) return;
-  const input = document.getElementById('answer').value;
-  if(!input.trim()){ document.getElementById('answer').focus(); return; }
-  const target = v.text;
-  const g = grade(target, input);
-  resetReveal();
-  document.getElementById('score').style.display='';
-  document.getElementById('graded').style.display='';
-  document.getElementById('legend').style.display='';
-  document.getElementById('meta').style.color='';
-  document.getElementById('pct').textContent = g.pct + '%';
-  let meta = `맞은 글자 ${g.correct}자`;
-  if(g.missed) meta += ` · <b class="m">빠뜨림 ${g.missed}자</b>`;
-  if(g.extra)  meta += ` · <b class="e">잘못 친 글자 ${g.extra}자</b>`;
-  document.getElementById('meta').innerHTML = meta;
-  document.getElementById('graded').innerHTML = g.html;
-  document.getElementById('perfect').style.display = g.perfect ? 'block' : 'none';
-  document.getElementById('result').classList.add('show');
-}
-
-let revealOn=false;
-function resetReveal(){
-  revealOn=false;
-  document.getElementById('revealBtn').textContent='정답 보기';
-}
-function doReveal(){
-  const v = currentVerse(); if(!v) return;
-  if(revealOn){   // 이미 정답이 떠 있으면 닫기
-    document.getElementById('result').classList.remove('show');
-    resetReveal();
-    return;
-  }
-  document.getElementById('score').style.display='';
-  document.getElementById('graded').style.display='';
-  document.getElementById('legend').style.display='';
-  document.getElementById('meta').style.color='';
-  document.getElementById('pct').textContent = '—';
-  document.getElementById('meta').innerHTML = '정답 본문입니다. 눈으로 익힌 뒤 다시 도전해 보세요.';
-  document.getElementById('graded').innerHTML = `<span class="ok">${v.text.split('').map(esc).join('')}</span>`;
-  document.getElementById('perfect').style.display='none';
-  document.getElementById('result').classList.add('show');
-  revealOn=true;
-  document.getElementById('revealBtn').textContent='정답 숨기기';
-}
-
-function doNext(){
-  if(pool.length===0) return;
-  cursor = (cursor+1) % pool.length;
-  renderPrompt();
-}
-
-function doPrev(){
-  if(pool.length===0) return;
-  cursor = (cursor-1+pool.length) % pool.length;
-  renderPrompt();
-}
-
-// ---------- 범위 선택 옵션 ----------
-function rebuildCatSelect(){
-  const cats = [...new Set(allVerses().map(v=>v.cat))];
-  const optHtml = `<option value="__all__">전체</option>` +
-    cats.map(c=>`<option value="${c.replace(/"/g,'&quot;')}">${c}</option>`).join('');
-  ['catSel','examCat'].forEach(id=>{
-    const sel=document.getElementById(id); if(!sel) return;
-    const prev=sel.value; sel.innerHTML=optHtml;
-    if(prev && [...sel.options].some(o=>o.value===prev)) sel.value=prev;
-  });
-  document.getElementById('catList').innerHTML = cats.map(c=>`<option value="${c.replace(/"/g,'&quot;')}">`).join('');
+  document.getElementById('practiceStatus').textContent=meta.textContent;
 }
 
 // ---------- 모의시험 ----------
@@ -624,8 +791,8 @@ function buildExam(){
   examVerses=list;
   document.getElementById('examList').innerHTML = list.map((v,i)=>`
     <div class="exam-item">
-      <div class="exam-head"><span class="exam-num">${i+1}</span><span class="exam-ref">${v.ref}</span></div>
-      <textarea class="exam-input" data-i="${i}" spellcheck="false" placeholder="이 주소의 말씀을 입력하세요…"></textarea>
+      <div class="exam-head"><span class="exam-num">${i+1}</span><span class="exam-ref">${esc(v.ref)}</span></div>
+      <textarea class="exam-input" maxlength="2000" aria-label="${esc(v.ref)} 말씀 입력" data-i="${i}" spellcheck="false" placeholder="이 주소의 말씀을 입력하세요…"></textarea>
       <div class="exam-grade" id="eg-${i}"></div>
     </div>`).join('');
   document.getElementById('examResult').innerHTML='';
@@ -658,87 +825,145 @@ function gradeExam(){
   document.getElementById('examResult').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
-// ---------- 목록 렌더 ----------
-function renderList(){
-  const card = document.getElementById('listCard');
-  const all = allVerses();
-  const cats = [...new Set(all.map(v=>v.cat))];
-  let html='';
-  for(const c of cats){
-    html += `<div class="listcat">${c}</div>`;
-    all.forEach((v,idx)=>{
-      if(v.cat!==c) return;
-      const ci = v.base ? -1 : custom.findIndex(x=>x.ref===v.ref && x.text===v.text && x.cat===v.cat);
-      html += `<div class="vrow">
-        <span class="vref">${v.ref}</span>
-        <span class="vtext">${v.text}</span>
-        ${v.base ? '' : `<span class="vtag">추가됨</span><button class="del" data-ci="${ci}">삭제</button>`}
-      </div>`;
-    });
-  }
-  card.innerHTML = html;
-  card.querySelectorAll('.del').forEach(b=>{
-    b.onclick = async ()=>{
-      const ci = +b.dataset.ci;
-      if(ci>=0){ custom.splice(ci,1); await saveCustom(); rebuildCatSelect(); renderList(); buildPool(); renderPrompt(); }
-    };
+
+function renderPrompt(){
+  renderTextPrompt();
+  resetReveal();
+  ['score','graded','legend'].forEach(id=>document.getElementById(id).style.display='');
+  document.getElementById('meta').style.color='';
+  const v=currentVerse();
+  const toRef=currentMode()==='toRef' && Boolean(v);
+  document.getElementById('pRef').style.display=toRef?'none':'';
+  document.getElementById('pBody').style.display=toRef?'block':'none';
+  document.getElementById('pBody').textContent=toRef?v.text:'';
+  ['answer','gradeBtn','hintBtn','revealBtn'].forEach(id=>document.getElementById(id).style.display=toRef?'none':'');
+  document.getElementById('answerHelp').textContent=toRef?'이 말씀이 어디 말씀인지 아래에서 골라보세요.':'위 주소의 말씀을 아래에 타이핑하세요. 띄어쓰기는 채점하지 않습니다.';
+  const choices=document.getElementById('choices');
+  choices.replaceChildren();
+  choices.style.display=toRef?'grid':'none';
+  if(toRef) buildChoices(v).forEach(option=>{
+    const button=document.createElement('button');
+    button.type='button'; button.className='choice'; button.textContent=option;
+    button.onclick=()=>pickChoice(button,option,v.ref,choices);
+    choices.append(button);
   });
+}
+let revealOn=false;
+function resetReveal(){
+  revealOn=false;
+  document.getElementById('revealBtn').textContent='정답 보기';
 }
 
 // ---------- 탭 ----------
-document.querySelectorAll('.tab').forEach(t=>{
-  t.onclick=()=>{
-    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
-    t.classList.add('active');
-    document.getElementById(t.dataset.tab).classList.add('active');
-    if(t.dataset.tab==='list') renderList();
-    if(t.dataset.tab==='exam' && !document.getElementById('examList').children.length) buildExam();
+const tabButtons=[...document.querySelectorAll('.tab')];
+function activateTab(tab,{focus=false}={}){
+  tabButtons.forEach(button=>{
+    const selected=button===tab;
+    button.classList.toggle('active',selected);
+    button.setAttribute('aria-selected',String(selected));
+    button.tabIndex=selected ? 0 : -1;
+  });
+  document.querySelectorAll('.panel').forEach(panel=>{
+    const selected=panel.id===tab.dataset.tab;
+    panel.classList.toggle('active',selected);
+    panel.hidden=!selected;
+  });
+  if(tab.dataset.tab==='list') renderList();
+  if(tab.dataset.tab==='exam' && !document.getElementById('examList').children.length) buildExam();
+  if(focus) tab.focus();
+}
+tabButtons.forEach((tab,index)=>{
+  tab.onclick=()=>activateTab(tab);
+  tab.onkeydown=e=>{
+    let target=index;
+    if(e.key==='ArrowRight') target=(index+1)%tabButtons.length;
+    else if(e.key==='ArrowLeft') target=(index-1+tabButtons.length)%tabButtons.length;
+    else if(e.key==='Home') target=0;
+    else if(e.key==='End') target=tabButtons.length-1;
+    else return;
+    e.preventDefault();
+    activateTab(tabButtons[target],{focus:true});
   };
 });
 
 // ---------- 이벤트 ----------
+document.getElementById('retryBtn').onclick=()=>renderPrompt();
+document.getElementById('typeSel').onchange=()=>renderPrompt();
+document.getElementById('examCat').onchange=buildExam;
+document.getElementById('examOrder').onchange=buildExam;
+document.getElementById('examReset').onclick=buildExam;
+document.getElementById('examSubmit').onclick=gradeExam;
+
 document.getElementById('gradeBtn').onclick = doGrade;
-document.getElementById('retryBtn').onclick = ()=>renderPrompt();  // 같은 구절 다시
+document.getElementById('hintBtn').onclick = toggleHint;
 document.getElementById('revealBtn').onclick = doReveal;
 document.getElementById('prevBtn').onclick = doPrev;
 document.getElementById('nextBtn').onclick = doNext;
 document.getElementById('answer').addEventListener('keydown', e=>{
-  if((e.ctrlKey||e.metaKey) && e.key==='Enter'){ e.preventDefault(); doGrade(); }
+  if(!e.isComposing && (e.ctrlKey||e.metaKey) && e.key==='Enter'){ e.preventDefault(); doGrade(); }
 });
-document.getElementById('catSel').onchange = ()=>{ buildPool(); renderPrompt(); };
-document.getElementById('orderSel').onchange = ()=>{ buildPool(); renderPrompt(); };
-document.getElementById('typeSel').onchange = ()=>{ renderPrompt(); };
-document.getElementById('examCat').onchange = buildExam;
-document.getElementById('examOrder').onchange = buildExam;
-document.getElementById('examReset').onclick = buildExam;
-document.getElementById('examSubmit').onclick = gradeExam;
+document.getElementById('catSel').onchange = e=>{
+  preferences.cat=e.target.value;
+  savePreferences();
+  buildPool();
+  renderPrompt();
+};
+document.getElementById('orderSel').onchange = e=>{
+  preferences.order=e.target.value;
+  savePreferences();
+  buildPool();
+  renderPrompt();
+};
 
+let toastTimer;
+function showToast(message,isError=false,duration=2200){
+  const toast=document.getElementById('toast');
+  clearTimeout(toastTimer);
+  toast.textContent=message;
+  toast.style.color=isError ? 'var(--miss)' : 'var(--ok)';
+  toast.classList.add('show');
+  toastTimer=setTimeout(()=>toast.classList.remove('show'),duration);
+}
 document.getElementById('saveBtn').onclick = async ()=>{
-  const cat = document.getElementById('aCat').value.trim();
-  const ref = document.getElementById('aRef').value.trim();
-  const text = document.getElementById('aText').value.trim();
-  if(!cat || !ref || !text){
-    const t=document.getElementById('toast');
-    t.textContent='주제·주소·본문을 모두 입력하세요';
-    t.style.color='#c0392b'; t.classList.add('show');
-    setTimeout(()=>t.classList.remove('show'),1800);
+  const catInput=document.getElementById('aCat');
+  const refInput=document.getElementById('aRef');
+  const textInput=document.getElementById('aText');
+  const verse=normalizeVerse({cat:catInput.value,ref:refInput.value,text:textInput.value});
+  if(!verse){
+    showToast('주제·주소·본문을 모두 입력하세요',true);
+    [catInput,refInput,textInput].find(input=>!input.value.trim())?.focus();
     return;
   }
-  custom.push({cat, ref, text});
-  await saveCustom();
-  document.getElementById('aRef').value='';
-  document.getElementById('aText').value='';
-  const t=document.getElementById('toast');
-  t.textContent='저장했습니다 ✓'; t.style.color='var(--ok)'; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),1800);
-  rebuildCatSelect(); buildPool();
+  const duplicate=allVerses().some(v=>
+    v.cat===verse.cat && v.ref===verse.ref && v.text===verse.text
+  );
+  if(duplicate){
+    showToast('이미 같은 말씀이 저장되어 있습니다',true);
+    refInput.focus();
+    return;
+  }
+
+  custom.push(verse);
+  const saved=await saveCustom();
+  refInput.value='';
+  textInput.value='';
+  rebuildCatSelect();
+  buildPool();
+  renderPrompt(); // 표시 구절과 실제 채점 대상을 항상 동기화
+  showToast(
+    saved ? '저장했습니다 ✓' : '현재 창에만 추가했습니다. 브라우저 저장 기능을 확인해 주세요.',
+    !saved,
+    saved ? 2200 : 4200
+  );
 };
 
 // ---------- 시작 ----------
 (async function init(){
+  loadPreferences();
+  document.getElementById('orderSel').value=preferences.order;
   await loadCustom();
   rebuildCatSelect();
+  savePreferences();
   buildPool();
   renderPrompt();
 })();
