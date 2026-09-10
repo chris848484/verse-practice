@@ -1,0 +1,126 @@
+// Run with Playwright installed; optional PLAYWRIGHT_MODULE and CHROME_PATH overrides.
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const fs=require('node:fs');
+const path=require('node:path');
+const http=require('node:http');
+const assert=require('node:assert/strict');
+const root=path.resolve(__dirname,'..');
+const manifest=JSON.parse(fs.readFileSync(path.join(root,'audio/manifest.json'),'utf8'));
+const errors=[];
+const server=http.createServer((req,res)=>{
+  const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
+  const file=path.resolve(root,'.'+(pathname==='/'?'/index.html':pathname));
+  if(!file.startsWith(root+path.sep)){res.writeHead(403).end();return;}
+  try{
+    const data=fs.readFileSync(file);
+    res.setHeader('Content-Type',file.endsWith('.mp3')?'audio/mpeg':file.endsWith('.json')?'application/json':'text/html; charset=utf-8');
+    res.end(data);
+  }catch(e){res.writeHead(404).end();}
+});
+(async()=>{
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const browser=await chromium.launch({headless:true,...(process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{})});
+  try{
+    const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+    const page=await context.newPage();
+    page.on('pageerror',e=>errors.push(e.message));
+    await page.goto('http://127.0.0.1:'+server.address().port);
+    await page.waitForFunction(()=>document.getElementById('verseAudio').hasAttribute('src'));
+    await page.selectOption('#audioRate','2');
+    assert.equal(await page.$eval('#verseAudio',a=>a.playbackRate),2);
+    await page.click('#tab-list');
+    const checks=page.locator('#listCard input[type=checkbox]');
+    assert.equal(await checks.count(),8);
+    assert.equal(await page.isDisabled('#playlistStart'),true);
+    await checks.nth(0).check();
+    await checks.nth(2).check();
+    assert.equal(await page.textContent('#playlistCount'),'2구절 선택');
+    await page.selectOption('#playlistRate','2');
+    await page.click('#playlistStart');
+    const waitPlaying=()=>page.waitForFunction(()=>{const a=document.getElementById('playlistAudio');return !a.paused && a.currentTime>0 && Number.isFinite(a.duration);});
+    const finishTrack=async()=>{
+      await waitPlaying();
+      await page.$eval('#playlistAudio',a=>{a.currentTime=a.duration-0.12;});
+    };
+    await waitPlaying();
+    assert.equal(await page.$eval('#playlistAudio',a=>a.playbackRate),2);
+    assert.ok((await page.getAttribute('#playlistAudio','src')).endsWith(manifest.verses[0].file));
+    await page.$eval('#playlistAudio',a=>a.pause());
+    await page.waitForFunction(()=>document.getElementById('playlistStatus').textContent.includes('일시정지'));
+    await page.$eval('#playlistAudio',a=>a.play());
+    await finishTrack();
+    await page.waitForFunction(()=>document.getElementById('playlistCurrent').textContent.startsWith('2 / 2'));
+    await waitPlaying();
+    assert.ok((await page.getAttribute('#playlistAudio','src')).endsWith(manifest.verses[2].file));
+    assert.equal(await page.$eval('#playlistAudio',a=>a.playbackRate),2);
+    await finishTrack();
+    await page.waitForFunction(()=>document.getElementById('playlistStatus').textContent.includes('모두 들었습니다'));
+    assert.equal(await page.$eval('#playlistAudio',a=>a.paused),true);
+    console.log('PASS subset ordering, actual ended auto-advance, pause/resume, completion, 2x retained');
+    await page.check('#playlistLoop');
+    await page.click('#playlistStart');
+    await page.click('#playlistNext');
+    await finishTrack();
+    await page.waitForFunction(()=>document.getElementById('playlistCurrent').textContent.startsWith('1 / 2'));
+    await waitPlaying();
+    await page.click('#playlistNext');
+    await waitPlaying();
+    await page.click('#playlistPrev');
+    await waitPlaying();
+    assert.ok((await page.textContent('#playlistCurrent')).startsWith('1 / 2'));
+    await checks.nth(1).check();
+    assert.equal(await page.$eval('#playlistAudio',a=>a.paused && !a.hasAttribute('src')),true);
+    assert.equal(await page.textContent('#playlistCount'),'3구절 선택');
+    await page.click('#playlistStart');
+    await waitPlaying();
+    await page.click('#tab-practice');
+    assert.equal(await page.$eval('#playlistAudio',a=>a.paused),true);
+    await page.click('#tab-list');
+    assert.equal(await page.textContent('#playlistCount'),'3구절 선택');
+    await page.click('#playlistStop');
+    await page.click('#playlistClear');
+    assert.equal(await page.isDisabled('#playlistStart'),true);
+    assert.equal(await page.locator('#listCard input:checked').count(),0);
+    console.log('PASS loop, previous/next, selection edit stops, tab pause, stop, deselect');
+    await page.click('#playlistSelectAll');
+    assert.equal(await page.textContent('#playlistCount'),'8구절 선택');
+    await page.uncheck('#playlistLoop');
+    await page.click('#playlistStart');
+    for(let i=0;i<8;i++){
+      await page.waitForFunction(i=>document.getElementById('playlistCurrent').textContent.startsWith((i+1)+' / 8'),i);
+      await waitPlaying();
+      assert.equal(await page.getAttribute('#playlistAudio','src'),manifest.verses[i].file);
+      await finishTrack();
+    }
+    await page.waitForFunction(()=>document.getElementById('playlistStatus').textContent.includes('모두 들었습니다'));
+    assert.equal(await page.$eval('html',e=>e.scrollWidth<=innerWidth),true);
+    fs.mkdirSync(path.join(root,'.tooling'),{recursive:true});
+    await page.screenshot({path:path.join(root,'.tooling/playlist-mobile.png'),fullPage:true});
+    await page.setViewportSize({width:1280,height:900});
+    assert.equal(await page.$eval('html',e=>e.scrollWidth<=innerWidth),true);
+    console.log('PASS all 8 actual audio files, automatic sequence to completion, mobile/desktop no overflow');
+    await context.close();
+    const edge=await browser.newContext();
+    const missing=await edge.newPage();
+    missing.on('pageerror',e=>errors.push(e.message));
+    await missing.route('**/audio/manifest.json',route=>route.fulfill({status:503,body:'Unavailable'}));
+    await missing.goto('http://127.0.0.1:'+server.address().port);
+    await missing.click('#tab-list');
+    await missing.waitForFunction(()=>document.getElementById('playlistStatus').textContent.includes('불러오지 못했습니다'));
+    assert.equal(await missing.isDisabled('#playlistStart'),true);
+    assert.equal(await missing.locator('#listCard input:enabled').count(),0);
+    await edge.close();
+    const customContext=await browser.newContext();
+    await customContext.addInitScript(()=>localStorage.setItem('custom_verses_v1',JSON.stringify([{cat:'직접 추가',ref:'창 1:1',text:'태초에 하나님이 천지를 창조하시니라'}])));
+    const customPage=await customContext.newPage();
+    await customPage.goto('http://127.0.0.1:'+server.address().port);
+    await customPage.waitForFunction(()=>document.getElementById('verseAudio').hasAttribute('src'));
+    await customPage.click('#tab-list');
+    assert.equal(await customPage.locator('#listCard input:disabled').count(),1);
+    await customPage.click('#playlistSelectAll');
+    assert.equal(await customPage.textContent('#playlistCount'),'8구절 선택');
+    await customContext.close();
+    assert.deepEqual(errors,[]);
+    console.log('PASS missing manifest, unavailable custom verse exclusion, no page errors');
+  }finally{await browser.close();server.close();}
+})().catch(e=>{console.error(e);server.close();process.exitCode=1;});
